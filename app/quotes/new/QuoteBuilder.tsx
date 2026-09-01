@@ -37,7 +37,7 @@ export function QuoteBuilder() {
   const cost = materialTotal + printingTotal + designTotal + finishCost + installationCost + structureTotal;
   const price = cost / Math.max(0.01, 1 - margin / 100);
 
-  const lines = [
+  const lines: Array<[string, number]> = [
     ["Material", materialTotal],
     ["Impresión", printingTotal],
     ["Diseño", designTotal],
