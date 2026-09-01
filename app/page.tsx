@@ -18,7 +18,7 @@ export default function Home() {
           <article key={name}>
             <h2>{name}</h2>
             <p>{detail}</p>
-            <span>En preparación</span>
+            {name === "Gran Formato" ? <a href="/structure">Probar costo de estructura →</a> : <span>En preparación</span>}
           </article>
         ))}
       </section>
