@@ -16,5 +16,29 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PORT: 3000
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  importer:
+    image: node:22-alpine
+    profiles: ["tools"]
+    working_dir: /app
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+    command: sh -lc "npm ci --omit=dev && npm run import:legacy"
+
 volumes:
   pgdata:
