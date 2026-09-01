@@ -108,7 +108,7 @@ try {
       width_m=EXCLUDED.width_m,length_m=EXCLUDED.length_m,sheet_cost=EXCLUDED.sheet_cost,cost_m2=EXCLUDED.cost_m2,
       minimum_fraction=EXCLUDED.minimum_fraction,special_full_sheet=EXCLUDED.special_full_sheet,reusable_offcut=EXCLUDED.reusable_offcut,
       default_cut=EXCLUDED.default_cut,stock_status=EXCLUDED.stock_status,updated_at=EXCLUDED.updated_at`, [
-      source.id, source.sku, source.category, source.name, source.thickness || "", number(source.width, 1.22), number(source.length, 2.44),
+      source.id, `${source.sku || "RIG"}-${source.id}`, source.category, source.name, source.thickness || "", number(source.width, 1.22), number(source.length, 2.44),
       number(source.sheet_cost), number(source.cost_m2), number(source.minimum_fraction, .25), Boolean(source.special_full_sheet),
       Boolean(source.reusable_offcut), source.default_cut || "Router CNC", source.stock_status || "Disponible", date(source.updated_at),
     ]);
