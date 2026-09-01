@@ -103,7 +103,7 @@ try {
   for (const source of rows("rigid_materials")) {
     await db.query(`INSERT INTO rigid_materials
       (legacy_id,sku,category,name,thickness,width_m,length_m,sheet_cost,cost_m2,minimum_fraction,special_full_sheet,reusable_offcut,default_cut,stock_status,updated_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
       ON CONFLICT (legacy_id) DO UPDATE SET sku=EXCLUDED.sku,category=EXCLUDED.category,name=EXCLUDED.name,thickness=EXCLUDED.thickness,
       width_m=EXCLUDED.width_m,length_m=EXCLUDED.length_m,sheet_cost=EXCLUDED.sheet_cost,cost_m2=EXCLUDED.cost_m2,
       minimum_fraction=EXCLUDED.minimum_fraction,special_full_sheet=EXCLUDED.special_full_sheet,reusable_offcut=EXCLUDED.reusable_offcut,
