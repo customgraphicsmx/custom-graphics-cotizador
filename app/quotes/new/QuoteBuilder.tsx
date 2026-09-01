@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { calculateStructure, structureProfiles } from "../../lib/structure-cost";
+import { calculateStructure, structureProfiles } from "../../../lib/structure-cost";
 import styles from "./QuoteBuilder.module.css";
 
 const money = new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" });
