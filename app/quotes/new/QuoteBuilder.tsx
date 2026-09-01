@@ -37,14 +37,14 @@ export function QuoteBuilder() {
   const cost = materialTotal + printingTotal + designTotal + finishCost + installationCost + structureTotal;
   const price = cost / Math.max(0.01, 1 - margin / 100);
 
-  const lines: Array<[string, number]> = [
+  const lines = ([
     ["Material", materialTotal],
     ["Impresión", printingTotal],
     ["Diseño", designTotal],
     ["Acabados y complementos", finishCost],
     ["Estructura", structureTotal],
     ["Instalación / logística", installationCost],
-  ].filter(([, total]) => total > 0);
+  ] as Array<[string, number]>).filter(([, total]) => total > 0);
 
   return <section className={styles.builder}>
     <div className={styles.form}>
