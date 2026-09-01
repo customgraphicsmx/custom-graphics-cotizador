@@ -1,0 +1,23 @@
+.estimator { display: grid; gap: 22px; margin-top: 32px; }
+.controls, .costLines, .summary { border: 1px solid #d8e0d5; border-radius: 16px; background: #fff; padding: 20px; }
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.formGrid label { display: grid; gap: 6px; font-size: .85rem; font-weight: 700; }
+.formGrid input, .formGrid select { width: 100%; border: 1px solid #c8d2c4; border-radius: 9px; background: #fff; padding: 10px; color: inherit; font: inherit; }
+.wide { grid-column: span 2; }
+.help { color: #526157; margin: 16px 0 0; line-height: 1.45; }
+.diagramAndSummary { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(240px, .75fr); gap: 22px; align-items: center; }
+.diagramAndSummary figure { margin: 0; min-width: 0; }
+.diagramShell { display: grid; place-items: center; width: min(100%, 760px); max-height: 420px; color: #1e3627; overflow: hidden; }
+.diagramShell svg { width: 100%; height: 100%; display: block; }
+.diagramAndSummary figcaption { color: #647365; font-size: .86rem; margin-top: 9px; }
+.summary { display: grid; gap: 10px; }
+.summary h2, .costLines h2 { margin: 0; font-size: 1.1rem; }
+.summary p { margin: 0; color: #526157; }
+.summary strong { font-size: 1.7rem; margin-top: 8px; }
+.summary span { color: #557445; font-weight: 700; font-size: .83rem; }
+.costLines { display: grid; gap: 0; }
+.costLine { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid #e3e8e1; }
+.costLine:first-of-type { margin-top: 10px; }
+.costLine small { display: block; color: #637265; margin-top: 4px; }
+.pending { background: #fff4dc; border: 1px solid #ecd294; border-radius: 10px; color: #795c18; margin: 14px 0 0; padding: 12px; }
+@media (max-width: 700px) { .diagramAndSummary { grid-template-columns: 1fr; } }
