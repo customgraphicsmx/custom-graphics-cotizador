@@ -319,13 +319,7 @@ export default function Home() {
 <small>Política aplicada</small>
 <strong>{customerName} · {customerType} · {margin}%</strong>
 </div>
-</div>}</div>{newClientOpen && <QuickClientModal close={() => setNewClientOpen(false)} onSaved={async (id) => { await loadQuoteClients(); const list = await fetch("/api/clients").then(r => r.json()) as ClientRecord[], client = list.find(c => c.id === id); setQuoteClients(list); if (client) {
-        setCustomerId(client.id);
-        setCustomerName(client.legal_name || client.company || client.name);
-        const type = client.customer_type as Exclude<CustomerType, "">;
-        setCustomerType(type);
-        setMargin(customerMargins[type]);
-    } setNewClientOpen(false); }}/>}</section>}
+</div>}</div>{newClientOpen && <QuickClientModal close={() => setNewClientOpen(false)} onSaved={(client) => { setQuoteClients((current) => [...current, client]); setCustomerId(client.id); setCustomerName(client.company || client.name); const type = client.customer_type as Exclude<CustomerType, "">; setCustomerType(type); setMargin(customerMargins[type] || 55); setNewClientOpen(false); }}/>}</section>}
  {step === 2 && <section className="step-panel">
 <div className="card-title">
 <div>
@@ -1168,9 +1162,9 @@ function ClientsView({ records, reload }: {
 }
 function QuickClientModal({ close, onSaved }: {
     close: () => void;
-    onSaved: (id: string) => void;
+    onSaved: (client: ClientRecord) => void;
 }) { const [form, setForm] = useState({ name: "", company: "", legal_name: "", tax_id: "", email: "", phone: "", customer_type: "Cliente Final", tax_regime: "", cfdi_use: "G03", fiscal_postal_code: "", street: "", exterior_number: "", interior_number: "", neighborhood: "", municipality: "", state: "Jalisco", country: "México" }), [saving, setSaving] = useState(false); const save = async () => { if (!form.name && !form.legal_name)
-    return; setSaving(true); const response = await fetch("/api/clients", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, name: form.name || form.legal_name }) }), data = await response.json(); onSaved(data.id); }; return <RecordModal title="Nuevo cliente" close={close} save={save}>
+    return; setSaving(true); const response = await fetch("/api/clients", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, name: form.name || form.legal_name }) }); const data = await response.json(); if (!response.ok || !data.client) { setSaving(false); return; } onSaved(data.client); }; return <RecordModal title="Nuevo cliente" close={close} save={save}>
 <div className="client-form-sections quick-client">
 <section>
 <h3>Datos generales</h3>
