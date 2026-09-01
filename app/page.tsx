@@ -209,8 +209,8 @@ export default function Home() {
     const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
     const [arlonCatalog, setArlonCatalog] = useState<ArlonRecord[]>([]);
     const [lxCatalog, setLxCatalog] = useState<LxRecord[]>([]);
-    const loadQuoteClients = () => fetch("/api/clients").then(r => r.json()).then(setQuoteClients);
-    useEffect(() => { loadQuoteClients(); fetch("/api/arlon").then(r=>r.json()).then(setArlonCatalog); fetch("/api/lx").then(r=>r.json()).then(setLxCatalog); }, []);
+    const loadQuoteClients = () => Promise.resolve().then(() => setQuoteClients([]));
+    useEffect(() => { loadQuoteClients(); setArlonCatalog([]); setLxCatalog([]); }, []);
     useEffect(() => { if (!customerId && customerName && quoteClients.length) { const match = quoteClients.find(c => [c.legal_name, c.company, c.name].filter(Boolean).includes(customerName)); if (match) setCustomerId(match.id); } }, [quoteClients, customerId, customerName]);
     const rows = useMemo(() => { const base = lines.map(line => ({ line, result: calc(line) })), groups: Record<string, {
         volume: number;
@@ -806,7 +806,7 @@ function BusinessPlatform({ initialSection, onNewQuote, onEditQuote }: {
     onEditQuote: (r: QuoteRecord) => void;
 }) {
     const [section, setSection] = useState(initialSection), [quotes, setQuotes] = useState<QuoteRecord[]>([]), [materials, setMaterials] = useState<MaterialRecord[]>([]), [clients, setClients] = useState<ClientRecord[]>([]),[suppliers,setSuppliers]=useState<SupplierRecord[]>([]),[purchaseOrders,setPurchaseOrders]=useState<PurchaseOrderRecord[]>([]),[organization,setOrganization]=useState<OrganizationRecord|null>(null),[users,setUsers]=useState<AppUserRecord[]>([]), [loading, setLoading] = useState(true);
-    const load = async () => { setLoading(true); const [q, m, c,s,po,o,u] = await Promise.all([fetch("/api/quotes").then(r => r.json()), fetch("/api/materials").then(r => r.json()), fetch("/api/clients").then(r => r.json()),fetch("/api/suppliers").then(r=>r.json()),fetch("/api/purchase-orders").then(r=>r.json()),fetch("/api/organization").then(r=>r.json()),fetch("/api/users").then(r=>r.json())]); setQuotes(q); setMaterials(m); setClients(c);setSuppliers(s);setPurchaseOrders(po);setOrganization(o);setUsers(u); setLoading(false); };
+    const load = async () => { setLoading(true); setQuotes([]); setMaterials([]); setClients([]); setSuppliers([]); setPurchaseOrders([]); setOrganization(null); setUsers([]); setLoading(false); };
     useEffect(() => { load(); }, []);
     const titles: Record<string, string> = { dashboard: "Inicio", materials: "Materias primas", suppliers:"Proveedores",purchases:"Órdenes de compra", clients: "Clientes", quotes: "Cotizaciones", sales: "Ventas",settings:"Configuración" };
     return <main className="business-shell">
