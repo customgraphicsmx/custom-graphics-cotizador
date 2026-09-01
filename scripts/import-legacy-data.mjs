@@ -16,7 +16,11 @@ const number = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(
 const date = (value) => new Date(number(value, Date.now())).toISOString();
 const json = (value, fallback = {}) => {
   if (typeof value === "object" && value !== null) return value;
-  try { return JSON.parse(value || ""); } catch { return fallback; }
+  let parsed = value;
+  for (let attempt = 0; attempt < 3 && typeof parsed === "string"; attempt += 1) {
+    try { parsed = JSON.parse(parsed); } catch { return fallback; }
+  }
+  return typeof parsed === "object" && parsed !== null ? parsed : fallback;
 };
 const materialCategory = (category) => {
   const value = String(category || "").toLowerCase();
