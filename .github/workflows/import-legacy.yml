@@ -1,0 +1,25 @@
+name: One-time legacy import
+
+on:
+  push:
+    paths:
+      - ".github/workflows/import-legacy.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: [self-hosted, linux, custom-graphics-vps]
+    steps:
+      - name: Sync approved recovery revision
+        run: |
+          cd /home/deploy/apps/custom-graphics-cotizador
+          git fetch origin main
+          git checkout --force main
+          git reset --hard origin/main
+
+      - name: Import recovered legacy data
+        run: |
+          cd /home/deploy/apps/custom-graphics-cotizador
+          docker compose --profile tools run --rm importer
