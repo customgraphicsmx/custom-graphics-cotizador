@@ -1,30 +1,31 @@
-const modules = [
-  ["Gran Formato", "Cotización, impresión, acabados y estructura."],
-  ["Materiales rígidos", "Lámina, vinil, corte, pegado y mano de obra."],
-  ["Catálogos", "Materiales, viniles, herrajes, proveedores e historial de costos."],
-  ["Revisión final", "Costos desglosados y gráfico de impacto por categoría."],
+import Link from "next/link";
+
+const actions = [
+  { href: "/quotes/new", title: "Nueva cotización", detail: "Crea un proyecto por pasos: cliente, sistema, impresión, acabados, estructura y revisión." },
+  { href: "/quotes", title: "Cotizaciones", detail: "Consulta proyectos en preparación y conserva su costo histórico." },
+  { href: "/clients", title: "Clientes", detail: "Centraliza contactos y el historial comercial de cada cliente." },
+  { href: "/catalogs", title: "Catálogos", detail: "Materiales, viniles, rígidos, proveedores y costos de producción." },
 ];
 
 export default function Home() {
   return (
-    <main>
-      <header>
+    <main className="page">
+      <header className="page-heading">
         <p className="eyebrow">Custom Graphics</p>
         <h1>Cotizador de producción</h1>
-        <p className="lead">Nueva plataforma propia en preparación. El sistema anterior se mantiene disponible hasta validar la migración.</p>
+        <p className="lead">La nueva plataforma ya está lista para organizar el flujo de cotización. Empezaremos por Gran Formato y agregaremos cada módulo con pruebas en esta versión.</p>
       </header>
-      <section aria-label="Módulos en construcción" className="grid">
-        {modules.map(([name, detail]) => (
-          <article key={name}>
-            <h2>{name}</h2>
-            <p>{detail}</p>
-            {name === "Gran Formato" ? <a href="/structure">Probar costo de estructura →</a> : <span>En preparación</span>}
-          </article>
+      <section className="dashboard-grid" aria-label="Accesos principales">
+        {actions.map((action) => (
+          <Link className="action-card" href={action.href} key={action.href}>
+            <h2>{action.title}</h2><p>{action.detail}</p><span>Entrar →</span>
+          </Link>
         ))}
       </section>
       <section className="notice">
-        <h2>Base de costeo</h2>
-        <p>Los importes se clasificarán como materia prima, mano de obra, costos indirectos y servicios. Cada cotización conservará su costo histórico.</p>
+        <h2>Siguiente bloque: Gran Formato</h2>
+        <p>El flujo conserva las etapas del sitio anterior: cliente, sistema aplicable, diseño, impresión/material, acabados, estructura, instalación y revisión final.</p>
+        <Link className="button" href="/quotes/new">Empezar una cotización</Link>
       </section>
     </main>
   );
