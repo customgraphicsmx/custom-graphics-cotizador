@@ -162,7 +162,7 @@ try {
       freight=EXCLUDED.freight,tax=EXCLUDED.tax,total=EXCLUDED.total,requested_by=EXCLUDED.requested_by,required_date=EXCLUDED.required_date,
       notes=EXCLUDED.notes,created_at=EXCLUDED.created_at,updated_at=EXCLUDED.updated_at`, [
       source.id, source.folio, source.supplier_id || null, source.supplier_name || "", source.quote_folio || "", source.project_name || "", source.status || "Borrador",
-      json(source.items_json, []), number(source.subtotal), number(source.freight), number(source.tax), number(source.total), source.requested_by || "",
+      JSON.stringify(json(source.items_json, [])), number(source.subtotal), number(source.freight), number(source.tax), number(source.total), source.requested_by || "",
       source.required_date || "", source.notes || "", date(source.created_at), date(source.updated_at),
     ]);
   }
