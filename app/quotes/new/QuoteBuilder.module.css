@@ -1,0 +1,28 @@
+.builder { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, .72fr); gap: 24px; margin-top: 34px; align-items: start; }
+.form { display: grid; gap: 16px; }
+.section, .summary { border: 1px solid #d8e0d5; background: #fff; border-radius: 16px; padding: 22px; }
+.section h2, .summary h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.section p { margin: 0 0 16px; color: #55665a; font-size: .9rem; line-height: 1.45; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.grid label, .summary label { display: grid; gap: 6px; color: #314237; font-size: .83rem; font-weight: 700; }
+.grid input, .grid select, .summary input { width: 100%; border: 1px solid #c8d2c4; border-radius: 8px; padding: 10px; color: inherit; font: inherit; background: #fff; }
+.full { grid-column: span 2; }
+.metric { display: grid; align-content: center; padding: 10px; border-radius: 8px; background: #f3f7ee; }
+.metric span, .kicker { color: #557445; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.metric b { font-size: 1.06rem; margin-top: 4px; }
+.check { display: flex; align-items: center; gap: 9px; font-weight: 700; cursor: pointer; margin-bottom: 16px; }
+.check input { width: 17px; height: 17px; accent-color: #557445; }
+.summary { position: sticky; top: 18px; display: grid; gap: 14px; }
+.summary h2 { font-size: 1.35rem; }
+.summary > p { margin: -6px 0 0; color: #55665a; line-height: 1.4; }
+.lines { display: grid; gap: 9px; padding: 14px 0; border-top: 1px solid #e0e7dd; border-bottom: 1px solid #e0e7dd; }
+.lines div { display: flex; justify-content: space-between; gap: 14px; color: #526157; font-size: .92rem; }
+.lines b { color: #13251a; }
+.total, .price { display: flex; justify-content: space-between; align-items: end; gap: 10px; }
+.total b { font-size: 1.25rem; }
+.price { background: #eaf3dd; margin: 0 -22px; padding: 16px 22px; }
+.price span { color: #3c5934; font-weight: 700; font-size: .85rem; }
+.price b { font-size: 1.36rem; }
+.summary button { border: 0; border-radius: 9px; padding: 12px; background: #ced7c8; color: #65725f; font-weight: 700; cursor: not-allowed; }
+@media (max-width: 860px) { .builder { grid-template-columns: 1fr; } .summary { position: static; } }
+@media (max-width: 480px) { .grid { grid-template-columns: 1fr; } .full { grid-column: span 1; } }
