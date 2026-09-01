@@ -1,0 +1,33 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, custom-graphics-vps]
+    steps:
+      - name: Sync repository
+        run: |
+          cd /home/deploy/apps/custom-graphics-cotizador
+          git fetch origin main
+          git checkout --force main
+          git reset --hard origin/main
+
+      - name: Build and start application
+        run: |
+          cd /home/deploy/apps/custom-graphics-cotizador
+          docker compose up -d --build app
+          docker compose ps
+
+      - name: Remove unused build layers
+        run: docker image prune -f
