@@ -1,0 +1,2 @@
+const sections=["Materiales flexibles","Viniles","Materiales rígidos","Herrajes y acabados","Proveedores","Historial de costos"];
+export default function CatalogsPage() { return <main className="page"><header className="page-heading"><p className="eyebrow">Base de costeo</p><h1>Catálogos</h1><p className="lead">Un solo lugar para precios de compra, unidades, proveedores y reglas de venta.</p></header><ul className="list">{sections.map((section)=><li key={section}><b>{section}</b><span className="badge">Datos importados · próximo CRUD</span></li>)}</ul></main>; }
