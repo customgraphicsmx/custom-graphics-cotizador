@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { calculateStructure, structureProfiles } from "../../lib/structure-cost";
 import styles from "./QuoteBuilder.module.css";
 
@@ -37,14 +37,14 @@ export function QuoteBuilder() {
   const cost = materialTotal + printingTotal + designTotal + finishCost + installationCost + structureTotal;
   const price = cost / Math.max(0.01, 1 - margin / 100);
 
-  const lines = useMemo(() => [
+  const lines = [
     ["Material", materialTotal],
     ["Impresión", printingTotal],
     ["Diseño", designTotal],
     ["Acabados y complementos", finishCost],
     ["Estructura", structureTotal],
     ["Instalación / logística", installationCost],
-  ].filter(([, total]) => total > 0), [materialTotal, printingTotal, designTotal, finishCost, structureTotal, installationCost]);
+  ].filter(([, total]) => total > 0);
 
   return <section className={styles.builder}>
     <div className={styles.form}>
