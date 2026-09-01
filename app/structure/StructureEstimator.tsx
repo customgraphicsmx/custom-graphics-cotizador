@@ -60,7 +60,6 @@ export function StructureEstimator() {
       <section className={styles.costLines} aria-label="Desglose de costos de estructura">
         <h2>Desglose de fabricación</h2>
         {result.lines.map((line) => <div className={styles.costLine} key={line.label}><div><b>{line.label}</b><small>{line.note}</small></div><strong>{money.format(line.total)}</strong></div>)}
-        {result.pendingCosts.map((pending) => <p className={styles.pending} key={pending}>{pending}</p>)}
       </section>
     </section>
   );
