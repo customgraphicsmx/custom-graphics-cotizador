@@ -1,0 +1,3 @@
+export default function ClientsPage() {
+ return <main className="page"><header className="page-heading"><p className="eyebrow">Comercial</p><h1>Clientes</h1><p className="lead">Directorio de clientes, contactos y proyectos relacionados.</p></header><section className="panel"><h2>Base de clientes recuperada</h2><p>Los clientes del sistema anterior se integrarán aquí para buscarlos al iniciar una cotización y consultar su historial.</p></section></main>;
+}
