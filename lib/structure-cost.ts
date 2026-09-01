@@ -25,6 +25,10 @@ export type StructureInput = {
 export type CostLine = { label: string; category: "materia_prima" | "mano_obra" | "indirecto"; total: number; note: string };
 
 const round = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+const weldingPerMeter = 4.35;
+const cuttingPerBar = 3.69;
+const fastenerCost = 1.2;
+const anticorrosivePaintPerMeter = 21.06;
 
 export function calculateStructure(input: StructureInput) {
   const widthM = Math.max(0.1, input.widthM);
@@ -37,15 +41,19 @@ export function calculateStructure(input: StructureInput) {
   const bars = Math.ceil(requiredM / input.profile.barLengthM);
   const joints = 4 + 2 * (horizontalCrossbars + verticalCrossbars);
   const laborHours = round(0.5 + requiredM * 0.32 + (horizontalCrossbars + verticalCrossbars) * 0.14);
+  const fasteners = 4 + joints * 2;
 
   const lines: CostLine[] = [
     { label: input.profile.label, category: "materia_prima", total: round(bars * input.profile.barCost), note: `${bars} barra(s) de ${input.profile.barLengthM} m` },
-    { label: "Soldadura", category: "materia_prima", total: round(requiredM * 4.35), note: "Consumo estimado de electrodo" },
-    { label: "Discos de corte", category: "indirecto", total: round(bars * 3.69), note: "Prorrateo por barra" },
+    { label: "Soldadura", category: "materia_prima", total: round(requiredM * weldingPerMeter), note: "Consumo estimado de electrodo" },
+    { label: "Discos de corte", category: "indirecto", total: round(bars * cuttingPerBar), note: "Prorrateo por barra" },
+    { label: "Pijas con rondana", category: "materia_prima", total: round(fasteners * fastenerCost), note: `${fasteners} pieza(s) estimadas` },
     { label: "Mano de obra de fabricación", category: "mano_obra", total: round(laborHours * 105), note: `${laborHours.toFixed(2)} h estimadas` },
   ];
 
-  const pendingCosts = input.finish === "anticorrosive" ? ["Primer, pintura y thinner: falta registrar costo vigente en catálogo."] : [];
+  if (input.finish === "anticorrosive") {
+    lines.splice(3, 0, { label: "Primer, pintura y thinner", category: "materia_prima", total: round(requiredM * anticorrosivePaintPerMeter), note: "Aplicación anticorrosiva" });
+  }
   const cost = round(lines.reduce((sum, line) => sum + line.total, 0));
 
   return {
@@ -59,9 +67,9 @@ export function calculateStructure(input: StructureInput) {
     purchasedM: round(bars * input.profile.barLengthM),
     bars,
     joints,
+    fasteners,
     laborHours,
     lines,
     cost,
-    pendingCosts,
   };
 }
