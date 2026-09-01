@@ -37,14 +37,14 @@ export function QuoteBuilder() {
   const cost = materialTotal + printingTotal + designTotal + finishCost + installationCost + structureTotal;
   const price = cost / Math.max(0.01, 1 - margin / 100);
 
-  const lines: Array<[string, number]> = [
+  const lines = ([
     ["Material", materialTotal],
     ["Impresión", printingTotal],
     ["Diseño", designTotal],
     ["Acabados y complementos", finishCost],
     ["Estructura", structureTotal],
     ["Instalación / logística", installationCost],
-  ].filter(([, total]) => total > 0);
+  ] as Array<[string, number]>).filter(([, total]) => total > 0);
 
   return <section className={styles.builder}>
     <div className={styles.form}>
@@ -55,7 +55,7 @@ export function QuoteBuilder() {
           <label className={styles.full}>Concepto<input value={description} onChange={(event) => setDescription(event.target.value)} /></label>
           <label>Ancho (m)<input type="number" min="0.01" step="0.01" value={width} onChange={(event) => setWidth(num(event.target.value, width))} /></label>
           <label>Alto (m)<input type="number" min="0.01" step="0.01" value={height} onChange={(event) => setHeight(num(event.target.value, height))} /></label>
-          <label>Cantidad<input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.floor(num(event.target.value, quantity)))} /></label>
+          <label>Cantidad<input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.floor(num(event.target.value, quantity))))} /></label>
           <div className={styles.metric}><span>Área total</span><b>{area.toFixed(2)} m²</b></div>
         </div>
       </section>
@@ -88,7 +88,7 @@ export function QuoteBuilder() {
       <h2>{description || "Proyecto de Gran Formato"}</h2>
       <p>{client || "Cliente por definir"} · {quantity} pza(s) · {area.toFixed(2)} m²</p>
       <div className={styles.lines}>{lines.length ? lines.map(([label, total]) => <div key={String(label)}><span>{label}</span><b>{money.format(Number(total))}</b></div>) : <p>Captura los costos para ver el desglose.</p>}</div>
-      <label>Margen objetivo (%)<input type="number" min="1" max="95" value={margin} onChange={(event) => setMargin(Math.min(95, Math.max(1, num(event.target.value, margin)))} /></label>
+      <label>Margen objetivo (%)<input type="number" min="1" max="95" value={margin} onChange={(event) => setMargin(Math.min(95, Math.max(1, num(event.target.value, margin))))} /></label>
       <div className={styles.total}><span>Costo total</span><b>{money.format(cost)}</b></div>
       <div className={styles.price}><span>Precio sugerido sin IVA</span><b>{money.format(price)}</b></div>
       <button type="button" disabled>Guardar cotización · siguiente bloque</button>
