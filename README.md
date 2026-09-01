@@ -49,3 +49,9 @@ Concentrar clientes, proveedores, materias primas, cotizaciones, órdenes de com
 ## Estado de recuperación
 
 El sitio anterior permanece activo en la versión 72. Su base de datos contiene catálogos, proveedores, clientes, cotizaciones y órdenes de compra que serán respaldados antes de la migración.
+
+## Base de infraestructura
+
+La migración inicia con PostgreSQL y Docker Compose. El esquema inicial queda en `db/init/001_schema.sql`; mantiene los registros históricos por identificador legado y permite desglosar los costos de una cotización por materia prima, mano de obra, costos indirectos y servicios.
+
+La aplicación nueva se implementará por módulos. El prototipo vigente no se sustituirá hasta que la importación de datos y el costeo sean validados.
