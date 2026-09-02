@@ -90,6 +90,7 @@ type RigidQuoteDraft = {
   assistantHours: number;
   vinylCost: number;
   workComplexity: "simple" | "standard" | "complex";
+  cutCatalog: "" | "arlon" | "lx";
 };
 type StructureDraft = {
   enabled: boolean;
@@ -776,6 +777,7 @@ export default function Home() {
     assistantHours: 0,
     vinylCost: 0,
     workComplexity: "standard",
+    cutCatalog: "",
   });
   const [extraDesignChanges, setExtraDesignChanges] = useState(0);
   const [extraDesignAdaptations, setExtraDesignAdaptations] = useState(0);
@@ -1237,6 +1239,7 @@ export default function Home() {
       vinylCost: 0,
       vinylProductId: "",
       workComplexity: "standard",
+      cutCatalog: "",
     });
     setLines([]);
     setActive(null);
@@ -5117,6 +5120,7 @@ function RigidQuoteConfigurator({
                 graphic: e.target.value as RigidQuoteDraft["graphic"],
                 vinylProductId: "",
                 vinylCost: 0,
+                cutCatalog: "",
               })
             }
           >
@@ -5129,16 +5133,11 @@ function RigidQuoteConfigurator({
           <label>
             Marca / catálogo
             <select
-              value={
-                draft.vinylProductId.startsWith("arlon:")
-                  ? "arlon"
-                  : draft.vinylProductId.startsWith("lx:")
-                    ? "lx"
-                    : ""
-              }
+              value={draft.cutCatalog || ""}
               onChange={(e) =>
                 setDraft({
                   ...draft,
+                  cutCatalog: e.target.value as RigidQuoteDraft["cutCatalog"],
                   vinylProductId: "",
                   vinylCost: 0,
                 })
@@ -5157,9 +5156,7 @@ function RigidQuoteConfigurator({
             value={draft.vinylProductId}
             disabled={
               draft.graphic === "none" ||
-              (draft.graphic === "cut" &&
-                !draft.vinylProductId.startsWith("arlon:") &&
-                !draft.vinylProductId.startsWith("lx:"))
+              (draft.graphic === "cut" && !draft.cutCatalog)
             }
             onChange={(e) =>
               setDraft({
@@ -5184,7 +5181,7 @@ function RigidQuoteConfigurator({
                   </option>
                 ))}
             {draft.graphic === "cut" &&
-              draft.vinylProductId.startsWith("arlon:") &&
+              draft.cutCatalog === "arlon" &&
               arlonCatalog
                 .filter((item) => item.active)
                 .map((item) => (
@@ -5193,7 +5190,7 @@ function RigidQuoteConfigurator({
                   </option>
                 ))}
             {draft.graphic === "cut" &&
-              draft.vinylProductId.startsWith("lx:") &&
+              draft.cutCatalog === "lx" &&
               lxCatalog
                 .filter((item) => item.active)
                 .map((item) => (
