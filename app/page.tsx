@@ -5629,7 +5629,7 @@ function MaterialsView({
         name: x.name,
         category: `Materiales rígidos · ${x.category}`,
         presentation: "lámina",
-        yield: `${x.width.toFixed(2)} × ${x.length.toFixed(2)} m · ${x.thickness}`,
+        yield: `${Number(x.width).toFixed(2)} × ${Number(x.length).toFixed(2)} m · ${x.thickness}`,
         purchaseCost: x.sheet_cost,
         cost: x.cost_m2,
         unit: "m²",
