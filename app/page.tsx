@@ -209,7 +209,7 @@ export default function Home() {
     const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
     const [arlonCatalog, setArlonCatalog] = useState<ArlonRecord[]>([]);
     const [lxCatalog, setLxCatalog] = useState<LxRecord[]>([]);
-    const loadQuoteClients = () => Promise.resolve().then(() => setQuoteClients([]));
+    const loadQuoteClients = () => fetch("/api/clients").then(response => response.ok ? response.json() : []).then(setQuoteClients).catch(() => setQuoteClients([]));
     useEffect(() => { loadQuoteClients(); setArlonCatalog([]); setLxCatalog([]); }, []);
     useEffect(() => { if (!customerId && customerName && quoteClients.length) { const match = quoteClients.find(c => [c.legal_name, c.company, c.name].filter(Boolean).includes(customerName)); if (match) setCustomerId(match.id); } }, [quoteClients, customerId, customerName]);
     const rows = useMemo(() => { const base = lines.map(line => ({ line, result: calc(line) })), groups: Record<string, {
@@ -806,7 +806,7 @@ function BusinessPlatform({ initialSection, onNewQuote, onEditQuote }: {
     onEditQuote: (r: QuoteRecord) => void;
 }) {
     const [section, setSection] = useState(initialSection), [quotes, setQuotes] = useState<QuoteRecord[]>([]), [materials, setMaterials] = useState<MaterialRecord[]>([]), [clients, setClients] = useState<ClientRecord[]>([]),[suppliers,setSuppliers]=useState<SupplierRecord[]>([]),[purchaseOrders,setPurchaseOrders]=useState<PurchaseOrderRecord[]>([]),[organization,setOrganization]=useState<OrganizationRecord|null>(null),[users,setUsers]=useState<AppUserRecord[]>([]), [loading, setLoading] = useState(true);
-    const load = async () => { setLoading(true); setQuotes([]); setMaterials([]); setClients([]); setSuppliers([]); setPurchaseOrders([]); setOrganization(null); setUsers([]); setLoading(false); };
+    const load = async () => { setLoading(true); const clientRecords = await fetch("/api/clients").then(response => response.ok ? response.json() : []).catch(() => []); setQuotes([]); setMaterials([]); setClients(clientRecords); setSuppliers([]); setPurchaseOrders([]); setOrganization(null); setUsers([]); setLoading(false); };
     useEffect(() => { load(); }, []);
     const titles: Record<string, string> = { dashboard: "Inicio", materials: "Materias primas", suppliers:"Proveedores",purchases:"Órdenes de compra", clients: "Clientes", quotes: "Cotizaciones", sales: "Ventas",settings:"Configuración" };
     return <main className="business-shell">
@@ -1170,7 +1170,7 @@ function QuickClientModal({ close, onSaved }: {
     close: () => void;
     onSaved: (id: string) => void;
 }) { const [form, setForm] = useState({ name: "", company: "", legal_name: "", tax_id: "", email: "", phone: "", customer_type: "Cliente Final", tax_regime: "", cfdi_use: "G03", fiscal_postal_code: "", street: "", exterior_number: "", interior_number: "", neighborhood: "", municipality: "", state: "Jalisco", country: "México" }), [saving, setSaving] = useState(false); const save = async () => { if (!form.name && !form.legal_name)
-    return; setSaving(true); const response = await fetch("/api/clients", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, name: form.name || form.legal_name }) }), data = await response.json(); onSaved(data.id); }; return <RecordModal title="Nuevo cliente" close={close} save={save}>
+    return; setSaving(true); const response = await fetch("/api/clients", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...form, name: form.name || form.legal_name }) }), data = await response.json().catch(() => ({})); if (!response.ok || !data.id) { setSaving(false); return; } onSaved(data.id); }; return <RecordModal title="Nuevo cliente" close={close} save={save}>
 <div className="client-form-sections quick-client">
 <section>
 <h3>Datos generales</h3>
