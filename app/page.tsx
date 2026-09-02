@@ -89,6 +89,7 @@ type RigidQuoteDraft = {
   operatorHours: number;
   assistantHours: number;
   vinylCost: number;
+  workComplexity: "simple" | "standard" | "complex";
 };
 type StructureDraft = {
   enabled: boolean;
@@ -774,6 +775,7 @@ export default function Home() {
     operatorHours: 0,
     assistantHours: 0,
     vinylCost: 0,
+    workComplexity: "standard",
   });
   const [extraDesignChanges, setExtraDesignChanges] = useState(0);
   const [extraDesignAdaptations, setExtraDesignAdaptations] = useState(0);
@@ -890,11 +892,92 @@ export default function Home() {
       rigidLabor.find((x) => x.role.toLowerCase().includes("asistente"))
         ?.productive_hour_cost || 0,
     rigidMaterialCost = (rigidMaterial?.sheet_cost || 0) * rigidBillableSheets,
+    rigidPrintedVinyl = products.find(
+      (item) =>
+        rigidDraft.graphic === "printed" &&
+        item.id === rigidDraft.vinylProductId &&
+        item.mode === "area",
+    ),
+    rigidCutArlon = rigidDraft.vinylProductId.startsWith("arlon:")
+      ? arlonCatalog.find(
+          (item) => item.id === rigidDraft.vinylProductId.slice(6),
+        )
+      : undefined,
+    rigidCutLx = rigidDraft.vinylProductId.startsWith("lx:")
+      ? lxCatalog.find(
+          (item) => item.id === rigidDraft.vinylProductId.slice(3),
+        )
+      : undefined,
+    rigidVinylRollWidth = rigidDraft.width <= 0.61 ? 0.61 : 1.22,
+    rigidVinylLinearMeters =
+      rigidDraft.graphic === "cut"
+        ? (rigidArea / rigidVinylRollWidth) * 1.1
+        : 0,
+    rigidVinylCost =
+      rigidDraft.graphic === "printed" && rigidPrintedVinyl
+        ? rigidArea *
+          (rigidPrintedVinyl.substrate + ink["HP Latex"])
+        : rigidDraft.graphic === "cut"
+          ? rigidVinylLinearMeters *
+            (rigidCutArlon
+              ? rigidVinylRollWidth === 1.22
+                ? rigidCutArlon.meter_cost_122
+                : rigidCutArlon.meter_cost_061
+              : rigidCutLx
+                ? rigidVinylRollWidth === 1.22
+                  ? rigidCutLx.meter_cost_122
+                  : rigidCutLx.meter_cost_061
+                : 0)
+          : 0,
+    rigidComplexityFactor =
+      rigidDraft.workComplexity === "complex"
+        ? 1.5
+        : rigidDraft.workComplexity === "simple"
+          ? 0.75
+          : 1,
+    rigidCutOperatorHours =
+      ({
+        "Corte láser": 0.28,
+        "Router CNC": 0.35,
+        "Corte manual / sierra": 0.45,
+        "Sin corte": 0.08,
+      }[rigidDraft.cutProcess] || 0.2) * rigidArea,
+    rigidGraphicOperatorHours =
+      rigidDraft.graphic === "printed"
+        ? 0.18 * rigidArea
+        : rigidDraft.graphic === "cut"
+          ? (0.25 + (rigidDraft.weeding ? 0.35 : 0)) * rigidArea
+          : 0,
+    rigidMountingOperatorHours = rigidDraft.mounting ? 0.22 * rigidArea : 0,
+    rigidOperatorHours =
+      Math.ceil(
+        Math.max(
+          0.25,
+          (0.2 +
+            rigidCutOperatorHours +
+            rigidGraphicOperatorHours +
+            rigidMountingOperatorHours) *
+            rigidComplexityFactor,
+        ) * 4,
+      ) / 4,
+    rigidAssistantHours =
+      Math.ceil(
+        Math.max(
+          0,
+          (rigidArea >= 1 ? 0.12 * rigidArea : 0) +
+            (rigidDraft.mounting ? 0.18 * rigidArea : 0) +
+            (rigidDraft.cutProcess === "Corte manual / sierra"
+              ? 0.15 * rigidArea
+              : 0),
+        ) *
+          rigidComplexityFactor *
+          4,
+      ) / 4,
     rigidLaborCost =
-      rigidDraft.operatorHours * operatorRate +
-      rigidDraft.assistantHours * assistantRate,
+      rigidOperatorHours * operatorRate +
+      rigidAssistantHours * assistantRate,
     rigidProductionCost =
-      rigidMaterialCost + rigidLaborCost + rigidDraft.vinylCost,
+      rigidMaterialCost + rigidLaborCost + rigidVinylCost,
     rigidPrice = rigidProductionCost / (1 - Math.max(1, margin) / 100);
   const rows = useMemo(() => {
       const base = lines.map((line) => ({ line, result: calc(line) })),
@@ -1153,6 +1236,7 @@ export default function Home() {
       assistantHours: 0,
       vinylCost: 0,
       vinylProductId: "",
+      workComplexity: "standard",
     });
     setLines([]);
     setActive(null);
@@ -1177,8 +1261,8 @@ export default function Home() {
         billableSheets: rigidBillableSheets,
         material: rigidMaterial,
         labor: {
-          operatorHours: rigidDraft.operatorHours,
-          assistantHours: rigidDraft.assistantHours,
+          operatorHours: rigidOperatorHours,
+          assistantHours: rigidAssistantHours,
         },
         graphic: rigidDraft.graphic,
       }
@@ -1199,7 +1283,15 @@ export default function Home() {
     iva,
     total,
     lines: quoteModule === "rigid" ? [] : lines,
-    rigidDraft: quoteModule === "rigid" ? rigidDraft : undefined,
+    rigidDraft:
+      quoteModule === "rigid"
+        ? {
+            ...rigidDraft,
+            vinylCost: rigidVinylCost,
+            operatorHours: rigidOperatorHours,
+            assistantHours: rigidAssistantHours,
+          }
+        : undefined,
     structureDraft,
     procurementGroups: quoteModule === "rigid" ? [] : procurementGroups,
     procurementFreight,
@@ -1880,6 +1972,11 @@ export default function Home() {
                     materialCost={rigidMaterialCost}
                     laborCost={rigidLaborCost}
                     price={rigidPrice}
+                    arlonCatalog={arlonCatalog}
+                    lxCatalog={lxCatalog}
+                    vinylCost={rigidVinylCost}
+                    operatorHours={rigidOperatorHours}
+                    assistantHours={rigidAssistantHours}
                   />
                 )}
               </section>
@@ -4905,6 +5002,11 @@ function RigidQuoteConfigurator({
   materialCost,
   laborCost,
   price,
+  arlonCatalog,
+  lxCatalog,
+  vinylCost,
+  operatorHours,
+  assistantHours,
 }: {
   catalog: RigidMaterialRecord[];
   labor: RigidLaborRecord[];
@@ -4916,6 +5018,11 @@ function RigidQuoteConfigurator({
   materialCost: number;
   laborCost: number;
   price: number;
+  arlonCatalog: ArlonRecord[];
+  lxCatalog: LxRecord[];
+  vinylCost: number;
+  operatorHours: number;
+  assistantHours: number;
 }) {
   const operator = labor.find((x) => x.role.toLowerCase().includes("operador")),
     assistant = labor.find((x) => x.role.toLowerCase().includes("asistente"));
@@ -5004,53 +5111,135 @@ function RigidQuoteConfigurator({
           Complemento gráfico
           <select
             value={draft.graphic}
-            onChange={(e) => setDraft({ ...draft, graphic: e.target.value as RigidQuoteDraft["graphic"], vinylProductId: "", vinylCost: 0 })}
+            onChange={(e) =>
+              setDraft({
+                ...draft,
+                graphic: e.target.value as RigidQuoteDraft["graphic"],
+                vinylProductId: "",
+                vinylCost: 0,
+              })
+            }
           >
             <option value="none">Sin vinil</option>
             <option value="printed">Vinil impreso</option>
             <option value="cut">Vinil de recorte</option>
           </select>
         </label>
-        <label>
-          Tipo de vinil
+        {draft.graphic === "cut" && (
+          <label>
+            Marca / catálogo
+            <select
+              value={
+                draft.vinylProductId.startsWith("arlon:")
+                  ? "arlon"
+                  : draft.vinylProductId.startsWith("lx:")
+                    ? "lx"
+                    : ""
+              }
+              onChange={(e) =>
+                setDraft({
+                  ...draft,
+                  vinylProductId: "",
+                  vinylCost: 0,
+                })
+              }
+            >
+              <option value="">Seleccionar marca</option>
+              <option value="arlon">Arlon</option>
+              <option value="lx">LX Hausys / DM Lite</option>
+            </select>
+            <small>Elige primero la marca para consultar sus códigos.</small>
+          </label>
+        )}
+        <label className={draft.graphic === "cut" ? "wide" : ""}>
+          {draft.graphic === "cut" ? "Marca y código de vinil" : "Tipo de vinil"}
           <select
             value={draft.vinylProductId}
-            disabled={draft.graphic === "none"}
-            onChange={(e) => {
-              const vinyl = products.find((item) => item.id === e.target.value);
-              const area = draft.width * draft.height * draft.quantity;
-              const unitCost = vinyl ? vinyl.substrate + (draft.graphic === "printed" ? ink["HP Latex"] : 0) : 0;
-              setDraft({ ...draft, vinylProductId: e.target.value, vinylCost: area * unitCost });
-            }}
+            disabled={
+              draft.graphic === "none" ||
+              (draft.graphic === "cut" &&
+                !draft.vinylProductId.startsWith("arlon:") &&
+                !draft.vinylProductId.startsWith("lx:"))
+            }
+            onChange={(e) =>
+              setDraft({
+                ...draft,
+                vinylProductId: e.target.value,
+                vinylCost: 0,
+              })
+            }
           >
             <option value="">Seleccionar vinil</option>
-            {products.filter((item) => draft.graphic === "printed" ? item.mode === "area" && item.id !== "lona" : item.id === "recorte").map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+            {draft.graphic === "printed" &&
+              products
+                .filter(
+                  (item) =>
+                    item.mode === "area" &&
+                    item.id !== "lona" &&
+                    item.id !== "recorte",
+                )
+                .map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+            {draft.graphic === "cut" &&
+              draft.vinylProductId.startsWith("arlon:") &&
+              arlonCatalog
+                .filter((item) => item.active)
+                .map((item) => (
+                  <option key={item.id} value={`arlon:${item.id}`}>
+                    Arlon {item.series} · {item.color_code} · {item.color_name}
+                  </option>
+                ))}
+            {draft.graphic === "cut" &&
+              draft.vinylProductId.startsWith("lx:") &&
+              lxCatalog
+                .filter((item) => item.active)
+                .map((item) => (
+                  <option key={item.id} value={`lx:${item.id}`}>
+                    {item.brand} {item.series} · {item.color_code} ·{" "}
+                    {item.color_name}
+                  </option>
+                ))}
           </select>
-          <small>{draft.graphic === "none" ? "Selecciona primero el complemento gráfico." : "El costo se calcula con el área total del rígido."}</small>
+          <small>
+            {draft.graphic === "none"
+              ? "Selecciona primero el complemento gráfico."
+              : draft.graphic === "printed"
+                ? "Catálogo de viniles imprimibles de Gran Formato."
+                : "Catálogo real de viniles de corte por marca y código."}
+          </small>
+        </label>
+        <label>
+          Complejidad estimada
+          <select
+            value={draft.workComplexity || "standard"}
+            onChange={(e) =>
+              change(
+                "workComplexity",
+                e.target.value as RigidQuoteDraft["workComplexity"],
+              )
+            }
+          >
+            <option value="simple">Simple</option>
+            <option value="standard">Estándar</option>
+            <option value="complex">Compleja</option>
+          </select>
+          <small>Ajusta automáticamente los tiempos de producción.</small>
         </label>
         <label>
           Costo calculado del vinil
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={draft.vinylCost}
-            readOnly
-          />
+          <input type="number" value={vinylCost.toFixed(2)} readOnly />
           <small>
-            Se integra al costo y precio del material rígido.
+            Incluye material, impresión o rendimiento del rollo seleccionado.
           </small>
         </label>
         <label>
           Horas operador
-          <input
-            type="number"
-            min="0"
-            step="0.25"
-            value={draft.operatorHours}
-            onChange={(e) => change("operatorHours", Number(e.target.value))}
-          />
+          <input type="number" value={operatorHours} readOnly />
           <small>
+            Cálculo automático ·{" "}
             {operator
               ? `${money(operator.productive_hour_cost)}/h productiva`
               : "Costo laboral pendiente"}
@@ -5058,14 +5247,9 @@ function RigidQuoteConfigurator({
         </label>
         <label>
           Horas asistente
-          <input
-            type="number"
-            min="0"
-            step="0.25"
-            value={draft.assistantHours}
-            onChange={(e) => change("assistantHours", Number(e.target.value))}
-          />
+          <input type="number" value={assistantHours} readOnly />
           <small>
+            Cálculo automático ·{" "}
             {assistant
               ? `${money(assistant.productive_hour_cost)}/h productiva`
               : "Costo laboral pendiente"}
@@ -5107,7 +5291,7 @@ function RigidQuoteConfigurator({
           </div>
           <div>
             <span>Costo base</span>
-            <strong>{money(materialCost + laborCost + draft.vinylCost)}</strong>
+            <strong>{money(materialCost + laborCost + vinylCost)}</strong>
             <small>
               Material {money(materialCost)} · Mano de obra {money(laborCost)}
             </small>
@@ -5119,7 +5303,7 @@ function RigidQuoteConfigurator({
               Margen aplicado:{" "}
               {price
                 ? Math.round(
-                    (1 - (materialCost + laborCost + draft.vinylCost) / price) *
+                    (1 - (materialCost + laborCost + vinylCost) / price) *
                       100,
                   )
                 : 0}
