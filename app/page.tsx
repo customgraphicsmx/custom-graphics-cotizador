@@ -1152,6 +1152,7 @@ export default function Home() {
       operatorHours: 0,
       assistantHours: 0,
       vinylCost: 0,
+      vinylProductId: "",
     });
     setLines([]);
     setActive(null);
