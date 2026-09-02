@@ -91,6 +91,11 @@ type RigidQuoteDraft = {
   vinylCost: number;
   workComplexity: "simple" | "standard" | "complex";
   cutCatalog: "" | "arlon" | "lx";
+  laminationId:
+    | ""
+    | "transparente-mate"
+    | "transparente-brillante"
+    | "arlon-3510";
 };
 type StructureDraft = {
   enabled: boolean;
@@ -778,6 +783,7 @@ export default function Home() {
     vinylCost: 0,
     workComplexity: "standard",
     cutCatalog: "",
+    laminationId: "",
   });
   const [extraDesignChanges, setExtraDesignChanges] = useState(0);
   const [extraDesignAdaptations, setExtraDesignAdaptations] = useState(0);
@@ -900,6 +906,11 @@ export default function Home() {
         item.id === rigidDraft.vinylProductId &&
         item.mode === "area",
     ),
+    rigidLamination = products.find(
+      (item) =>
+        rigidDraft.graphic === "printed" &&
+        item.id === rigidDraft.laminationId,
+    ),
     rigidCutArlon = rigidDraft.vinylProductId.startsWith("arlon:")
       ? arlonCatalog.find(
           (item) => item.id === rigidDraft.vinylProductId.slice(6),
@@ -918,7 +929,9 @@ export default function Home() {
     rigidVinylCost =
       rigidDraft.graphic === "printed" && rigidPrintedVinyl
         ? rigidArea *
-          (rigidPrintedVinyl.substrate + ink["HP Latex"])
+          (rigidPrintedVinyl.substrate +
+            ink["HP Latex"] +
+            (rigidLamination?.substrate || 0))
         : rigidDraft.graphic === "cut"
           ? rigidVinylLinearMeters *
             (rigidCutArlon
@@ -950,7 +963,11 @@ export default function Home() {
         : rigidDraft.graphic === "cut"
           ? (0.25 + (rigidDraft.weeding ? 0.35 : 0)) * rigidArea
           : 0,
-    rigidMountingOperatorHours = rigidDraft.mounting ? 0.22 * rigidArea : 0,
+    rigidMountingOperatorHours =
+      (rigidDraft.mounting ? 0.22 * rigidArea : 0) +
+      (rigidDraft.graphic === "printed" && rigidDraft.laminationId
+        ? 0.14 * rigidArea
+        : 0),
     rigidOperatorHours = rigidMaterial
       ? Math.ceil(
           Math.max(
@@ -1242,6 +1259,7 @@ export default function Home() {
       vinylProductId: "",
       workComplexity: "standard",
       cutCatalog: "",
+      laminationId: "",
     });
     setLines([]);
     setActive(null);
@@ -5123,6 +5141,7 @@ function RigidQuoteConfigurator({
                 vinylProductId: "",
                 vinylCost: 0,
                 cutCatalog: "",
+                laminationId: "",
               })
             }
           >
@@ -5210,6 +5229,34 @@ function RigidQuoteConfigurator({
                 : "Catálogo real de viniles de corte por marca y código."}
           </small>
         </label>
+        {draft.graphic === "printed" && (
+          <label>
+            Laminado
+            <select
+              value={draft.laminationId || ""}
+              onChange={(e) =>
+                change(
+                  "laminationId",
+                  e.target.value as RigidQuoteDraft["laminationId"],
+                )
+              }
+            >
+              <option value="">Sin laminado</option>
+              <option value="transparente-mate">
+                Transparente económico mate
+              </option>
+              <option value="transparente-brillante">
+                Transparente económico brillante
+              </option>
+              <option value="arlon-3510">
+                Arlon 3510 transparente mate
+              </option>
+            </select>
+            <small>
+              El material y el tiempo de aplicación se agregan automáticamente.
+            </small>
+          </label>
+        )}
         <label>
           Complejidad estimada
           <select
