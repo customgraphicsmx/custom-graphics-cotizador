@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { db } from "../../../../lib/db";
+import { isAdministratorRequest } from "../../../../lib/admin";
+export const runtime="nodejs";
+const no=(r:Request)=>!isAdministratorRequest(r)?NextResponse.json({error:"No autorizado."},{status:401}):null;
+const n=(v:unknown)=>Number(v)||0; const s=(v:unknown)=>typeof v==="string"?v:"";
+export async function PATCH(r:Request,{params}:{params:Promise<{id:string}>}){const x=no(r);if(x)return x;const {id}=await params,b=await r.json();await db.query(`UPDATE clients SET name=$1,company=$2,fiscal=$3::jsonb,address=$4::jsonb,email=$5,phone=$6,customer_type=$7,updated_at=now() WHERE id=$8`,[s(b.name),s(b.company),JSON.stringify({legal_name:s(b.legal_name),tax_id:s(b.tax_id),tax_regime:s(b.tax_regime),cfdi_use:s(b.cfdi_use)||"G03",fiscal_postal_code:s(b.fiscal_postal_code)}),JSON.stringify({street:s(b.street),exterior_number:s(b.exterior_number),interior_number:s(b.interior_number),neighborhood:s(b.neighborhood),municipality:s(b.municipality),state:s(b.state),country:s(b.country)||"México"}),s(b.email),s(b.phone),s(b.customer_type)||"Cliente Final",id]);return NextResponse.json({ok:true})} export async function DELETE(r:Request,{params}:{params:Promise<{id:string}>}){const x=no(r);if(x)return x;const {id}=await params;await db.query("DELETE FROM clients WHERE id=$1",[id]);return NextResponse.json({ok:true})}
