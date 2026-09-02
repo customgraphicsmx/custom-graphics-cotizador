@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type Client = { id: string; name: string; company?: string; legal_name?: string; customer_type?: string; };
 type Material = { id: string; code: string; name: string; category: string; unit: string; cost: number; supplier?: string; };
-type Rigid = { id: string; sku: string; name: string; category: string; thickness?: string; cost_m2: number; sheet_cost: number; };
+type Rigid = { id: string; sku: string; name: string; category: string; thickness?: string; width: number; length: number; cost_m2: number; sheet_cost: number; };
 type Catalog = { materials: Material[]; rigidMaterials: Rigid[]; labor: { id: string; role: string; productive_hour_cost: number }[]; };
 const mxn = (n: number) => new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 }).format(Number.isFinite(n) ? n : 0);
 
