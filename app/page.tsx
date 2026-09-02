@@ -938,12 +938,12 @@ export default function Home() {
           ? 0.75
           : 1,
     rigidCutOperatorHours =
-      ({
+      (({
         "Corte láser": 0.28,
         "Router CNC": 0.35,
         "Corte manual / sierra": 0.45,
         "Sin corte": 0.08,
-      }[rigidDraft.cutProcess] || 0.2) * rigidArea,
+      } as Record<string, number>)[rigidDraft.cutProcess] || 0.2) * rigidArea,
     rigidGraphicOperatorHours =
       rigidDraft.graphic === "printed"
         ? 0.18 * rigidArea
