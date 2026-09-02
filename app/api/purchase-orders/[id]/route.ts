@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { db } from "../../../../lib/db";
+import { isAdministratorRequest } from "../../../../lib/admin";
+export const runtime="nodejs";
+const no=(r:Request)=>!isAdministratorRequest(r)?NextResponse.json({error:"No autorizado."},{status:401}):null;
+const n=(v:unknown)=>Number(v)||0; const s=(v:unknown)=>typeof v==="string"?v:"";
+export async function PATCH(r:Request,{params}:{params:Promise<{id:string}>}){const x=no(r);if(x)return x;const {id}=await params,b=await r.json();await db.query(`UPDATE purchase_orders SET supplier_id=$1,supplier_name=$2,quote_folio=$3,project_name=$4,status=$5,items=$6::jsonb,subtotal=$7,freight=$8,tax=$9,total=$10,requested_by=$11,required_date=$12,notes=$13,updated_at=now() WHERE id=$14`,[b.supplier_id||null,s(b.supplier_name),s(b.quote_folio),s(b.project_name),s(b.status)||"Borrador",JSON.stringify(b.items||[]),n(b.subtotal),n(b.freight),n(b.tax),n(b.total),s(b.requested_by),b.required_date||null,s(b.notes),id]);return NextResponse.json({ok:true})}export async function DELETE(r:Request,{params}:{params:Promise<{id:string}>}){const x=no(r);if(x)return x;const {id}=await params;await db.query("DELETE FROM purchase_orders WHERE id=$1 AND status='Borrador'",[id]);return NextResponse.json({ok:true})}
