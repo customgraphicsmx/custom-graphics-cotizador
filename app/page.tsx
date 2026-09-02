@@ -951,30 +951,32 @@ export default function Home() {
           ? (0.25 + (rigidDraft.weeding ? 0.35 : 0)) * rigidArea
           : 0,
     rigidMountingOperatorHours = rigidDraft.mounting ? 0.22 * rigidArea : 0,
-    rigidOperatorHours =
-      Math.ceil(
-        Math.max(
-          0.25,
-          (0.2 +
-            rigidCutOperatorHours +
-            rigidGraphicOperatorHours +
-            rigidMountingOperatorHours) *
-            rigidComplexityFactor,
-        ) * 4,
-      ) / 4,
-    rigidAssistantHours =
-      Math.ceil(
-        Math.max(
-          0,
-          (rigidArea >= 1 ? 0.12 * rigidArea : 0) +
-            (rigidDraft.mounting ? 0.18 * rigidArea : 0) +
-            (rigidDraft.cutProcess === "Corte manual / sierra"
-              ? 0.15 * rigidArea
-              : 0),
-        ) *
-          rigidComplexityFactor *
-          4,
-      ) / 4,
+    rigidOperatorHours = rigidMaterial
+      ? Math.ceil(
+          Math.max(
+            0.25,
+            (0.2 +
+              rigidCutOperatorHours +
+              rigidGraphicOperatorHours +
+              rigidMountingOperatorHours) *
+              rigidComplexityFactor,
+          ) * 4,
+        ) / 4
+      : 0,
+    rigidAssistantHours = rigidMaterial
+      ? Math.ceil(
+          Math.max(
+            0,
+            (rigidArea >= 1 ? 0.12 * rigidArea : 0) +
+              (rigidDraft.mounting ? 0.18 * rigidArea : 0) +
+              (rigidDraft.cutProcess === "Corte manual / sierra"
+                ? 0.15 * rigidArea
+                : 0),
+          ) *
+            rigidComplexityFactor *
+            4,
+        ) / 4
+      : 0,
     rigidLaborCost =
       rigidOperatorHours * operatorRate +
       rigidAssistantHours * assistantRate,
