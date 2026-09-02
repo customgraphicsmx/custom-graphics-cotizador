@@ -3387,6 +3387,10 @@ function CostBreakdown({
   rows,
   designCost,
   procurementFreight = 0,
+  structureProfileCost,
+  structureFabricationCost,
+  structurePaintCost,
+  structureLaborCost,
 }: {
   rows: {
     line: Line;
