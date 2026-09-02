@@ -734,6 +734,14 @@ function commercialDescription(l: Line) {
   const fileDescription = l.fileDescription?.trim();
   return `${fileDescription ? `${fileDescription}. ` : ""}${technicalDescription(l)}`;
 }
+function dateInputValue(offsetDays = 0) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 export default function Home() {
   const [step, setStep] = useState(1),
     [margin, setMargin] = useState(55),
@@ -741,6 +749,10 @@ export default function Home() {
     [lines, setLines] = useState<Line[]>([]),
     [active, setActive] = useState<number | null>(null),
     [seller, setSeller] = useState(""),
+    [closer, setCloser] = useState(""),
+    [projectName, setProjectName] = useState(""),
+    [quoteDate, setQuoteDate] = useState(() => dateInputValue()),
+    [expirationDate, setExpirationDate] = useState(() => dateInputValue(15)),
     [customerType, setCustomerType] = useState<CustomerType>(""),
     [customerName, setCustomerName] = useState(""),
     [customerId, setCustomerId] = useState(""),
@@ -1237,6 +1249,10 @@ export default function Home() {
     setCustomerName("");
     setCustomerType("");
     setSeller("");
+    setCloser("");
+    setProjectName("");
+    setQuoteDate(dateInputValue());
+    setExpirationDate(dateInputValue(15));
     setMargin(55);
     setDiscountPercent(0);
     setDesignService("DIS-00");
@@ -1297,6 +1313,10 @@ export default function Home() {
     customerName,
     customerType,
     seller,
+    closer,
+    projectName,
+    quoteDate,
+    expirationDate,
     status: "Borrador",
     margin,
     discountPercent,
@@ -1428,6 +1448,10 @@ export default function Home() {
     setPreview(null);
     setQuoteId(record.id);
     setSeller(data.seller || record.seller);
+    setCloser(data.closer || "");
+    setProjectName(data.projectName || "");
+    setQuoteDate(data.quoteDate || dateInputValue());
+    setExpirationDate(data.expirationDate || dateInputValue(15));
     setCustomerName(data.customerName || record.customer_name);
     setCustomerType(
       (data.customerType || record.customer_type) as CustomerType,
@@ -1597,17 +1621,20 @@ export default function Home() {
                 <div className="client-quote-row">
                   <label>
                     Cliente
+                    <small>Nombre de empresa y contacto registrado.</small>
                     <select
                       value={customerId}
                       onChange={(e) => {
                         const id = e.target.value,
-                          set = quoteClients.find((x) => x.id === id);
+                          selectedClient = quoteClients.find((x) => x.id === id);
                         setCustomerId(id);
-                        if (set) {
+                        if (selectedClient) {
                           setCustomerName(
-                            set.legal_name || set.company || set.name,
+                            selectedClient.legal_name ||
+                              selectedClient.company ||
+                              selectedClient.name,
                           );
-                          const type = (set.customer_type ||
+                          const type = (selectedClient.customer_type ||
                             "Cliente Final") as CustomerType;
                           setCustomerType(type);
                           setMargin(
@@ -1624,8 +1651,9 @@ export default function Home() {
                       </option>
                       {quoteClients.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.company || c.legal_name || c.name}
-                          {c.name && c.company ? ` · ${c.name}` : ""}
+                          {[c.company || c.legal_name, c.name, c.email]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </option>
                       ))}
                     </select>
@@ -1639,12 +1667,36 @@ export default function Home() {
                 </div>
                 <div className="seller-panel commercial-start quote-policy">
                   <label>
-                    Vendedor
+                    Cotizador
+                    <small>Persona que realizará la cotización.</small>
                     <select
                       value={seller}
                       onChange={(e) => setSeller(e.target.value)}
                     >
-                      <option value="">Seleccionar vendedor</option>
+                      <option value="">Seleccionar cotizador</option>
+                      <option>Héctor Gradilla</option>
+                      <option>Michel</option>
+                      <option>Wendy</option>
+                      <option>Alejandro</option>
+                    </select>
+                  </label>
+                  <label>
+                    Nombre del proyecto
+                    <small>Referencia que identificará este trabajo.</small>
+                    <input
+                      value={projectName}
+                      onChange={(e) => setProjectName(e.target.value)}
+                      placeholder="Ej. Señalización sucursal Centro"
+                    />
+                  </label>
+                  <label>
+                    Cerrador
+                    <small>Persona responsable de cerrar la venta.</small>
+                    <select
+                      value={closer}
+                      onChange={(e) => setCloser(e.target.value)}
+                    >
+                      <option value="">Seleccionar cerrador</option>
                       <option>Héctor Gradilla</option>
                       <option>Michel</option>
                       <option>Wendy</option>
@@ -1653,6 +1705,7 @@ export default function Home() {
                   </label>
                   <label>
                     Tipo de cliente
+                    <small>Define el margen comercial aplicable.</small>
                     <select
                       value={customerType}
                       onChange={(e) => {
@@ -1671,18 +1724,42 @@ export default function Home() {
                       <option value="Cliente Final">Cliente Final · 65%</option>
                     </select>
                   </label>
+                  <label>
+                    Fecha de cotización
+                    <input
+                      type="date"
+                      value={quoteDate}
+                      onChange={(e) => setQuoteDate(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Vencimiento
+                    <input
+                      type="date"
+                      min={quoteDate}
+                      value={expirationDate}
+                      onChange={(e) => setExpirationDate(e.target.value)}
+                    />
+                  </label>
                 </div>
-                {customerName && seller && customerType && (
-                  <div className="seller-confirm commercial-confirm">
-                    <span>✓</span>
-                    <div>
-                      <small>Política aplicada</small>
-                      <strong>
-                        {customerName} · {customerType} · {margin}%
-                      </strong>
+                {customerName &&
+                  seller &&
+                  closer &&
+                  projectName &&
+                  customerType &&
+                  quoteDate &&
+                  expirationDate && (
+                    <div className="seller-confirm commercial-confirm">
+                      <span>✓</span>
+                      <div>
+                        <small>Datos comerciales completos</small>
+                        <strong>
+                          {projectName} · {customerName} · {customerType} ·{" "}
+                          {margin}%
+                        </strong>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
                 {newClientOpen && (
                   <QuickClientModal
                     close={() => setNewClientOpen(false)}
@@ -2225,7 +2302,15 @@ export default function Home() {
                 disabled={
                   saving ||
                   (step >= 4 && hasIncompleteCutSelection) ||
-                  (step === 1 && (!customerName || !seller || !customerType)) ||
+                  (step === 1 &&
+                    (!customerName ||
+                      !seller ||
+                      !closer ||
+                      !projectName.trim() ||
+                      !customerType ||
+                      !quoteDate ||
+                      !expirationDate ||
+                      expirationDate < quoteDate)) ||
                   (step === 4 &&
                     (quoteModule === "rigid" ? !rigidMaterial : !lines.length))
                 }
