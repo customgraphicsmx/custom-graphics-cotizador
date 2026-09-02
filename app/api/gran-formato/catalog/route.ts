@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "../../../../../lib/db";
-import { isAdministratorRequest } from "../../../../../lib/admin";
+import { db } from "../../../../lib/db";
+import { isAdministratorRequest } from "../../../../lib/admin";
 
 export async function GET(request: Request) {
   if (!isAdministratorRequest(request)) {
