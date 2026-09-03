@@ -1403,7 +1403,7 @@ export default function Home() {
               billableArea: x.result.bill,
               waste: x.result.waste,
             };
-          }))
+          })
         : []),
       ...(hasStructure && structureDraft.enabled && structureRecipeData
         ? [
