@@ -770,8 +770,9 @@ export default function Home() {
     [saveError, setSaveError] = useState("");
   const [designService, setDesignService] = useState<DesignService>("DIS-00");
   const [quoteModule, setQuoteModule] = useState<QuoteModule>("print-to-go");
-  const [systemChoice, setSystemChoice] =
-    useState<SystemChoice>("printing");
+  const [selectedSystems, setSelectedSystems] = useState<SystemChoice[]>([
+    "printing",
+  ]);
   const [rigidCatalog, setRigidCatalog] = useState<RigidMaterialRecord[]>([]);
   const [rigidLabor, setRigidLabor] = useState<RigidLaborRecord[]>([]);
   const [structureMaterials, setStructureMaterials] = useState<
@@ -854,13 +855,18 @@ export default function Home() {
       signage: "Señalética",
       letters3d: "Letreros 3D",
     };
-  const selectSystem = (choice: SystemChoice) => {
-    setSystemChoice(choice);
-    if (choice === "rigid-signage") {
-      setQuoteModule("rigid");
-      return;
-    }
-    setQuoteModule("print-to-go");
+  const toggleSystem = (choice: SystemChoice) => {
+    setSelectedSystems((current) => {
+      const next = current.includes(choice)
+        ? current.filter((item) => item !== choice)
+        : [...current, choice];
+      setQuoteModule(
+        next.includes("rigid-signage") && !next.includes("printing")
+          ? "rigid"
+          : "print-to-go",
+      );
+      return next;
+    });
     if (choice === "design" && designService === "DIS-00") {
       setDesignService("DIS-01");
     }
@@ -1107,29 +1113,38 @@ export default function Home() {
         return { supplier, ...g, shipping };
       });
     }, [lines]),
-    procurementFreight =
-      quoteModule === "rigid"
-        ? 0
-        : procurementGroups.reduce((s, g) => s + g.shipping, 0),
+    hasDesign = selectedSystems.includes("design"),
+    hasPrinting = selectedSystems.includes("printing"),
+    hasRigid = selectedSystems.includes("rigid-signage"),
+    hasStructure = selectedSystems.includes("structure"),
+    hasFinishes = selectedSystems.includes("finishes"),
+    procurementFreight = hasPrinting
+      ? procurementGroups.reduce((s, g) => s + g.shipping, 0)
+      : 0,
     designBase = designServices[designService],
-    designPrice =
-      designBase.price +
-      extraDesignChanges * 150 +
-      extraDesignAdaptations * 100,
-    designCost =
-      designBase.cost + extraDesignChanges * 72 + extraDesignAdaptations * 48,
+    designPrice = hasDesign
+      ? designBase.price +
+        extraDesignChanges * 150 +
+        extraDesignAdaptations * 100
+      : 0,
+    designCost = hasDesign
+      ? designBase.cost +
+        extraDesignChanges * 72 +
+        extraDesignAdaptations * 48
+      : 0,
+    appliedStructure = hasStructure
+      ? calculateStructure()
+      : { cost: 0, price: 0 },
     productionCost =
-      (quoteModule === "rigid"
-        ? rigidProductionCost
-        : rows.reduce((s, x) => s + x.result.cost, 0)) +
-      calculateStructure().cost,
+      (hasPrinting ? rows.reduce((s, x) => s + x.result.cost, 0) : 0) +
+      (hasRigid ? rigidProductionCost : 0) +
+      appliedStructure.cost,
     freightPrice = procurementFreight / (1 - Math.max(1, margin) / 100),
     cost = productionCost + designCost + procurementFreight,
     grossSubtotal =
-      (quoteModule === "rigid"
-        ? rigidPrice
-        : rows.reduce((s, x) => s + x.price, 0)) +
-      calculateStructure().price +
+      (hasPrinting ? rows.reduce((s, x) => s + x.price, 0) : 0) +
+      (hasRigid ? rigidPrice : 0) +
+      appliedStructure.price +
       designPrice +
       freightPrice,
     discountAmount =
@@ -1143,16 +1158,16 @@ export default function Home() {
     utilityPct = total ? (Math.max(0, utility) / total) * 100 : 0,
     ivaPct = total ? (iva / total) * 100 : 0,
     requiresApproval =
-      quoteModule === "print-to-go" && rows.some((x) => x.requiresApproval),
+      hasPrinting && rows.some((x) => x.requiresApproval),
     hasIncompleteCutSelection =
-      quoteModule === "print-to-go" &&
+      hasPrinting &&
       lines.some(
         (l) =>
           products.find((p) => p.id === l.productId)?.mode === "linear" &&
           !l.arlonId,
       ),
     hasPendingCutCost =
-      quoteModule === "print-to-go" &&
+      hasPrinting &&
       lines.some(
         (l) =>
           products.find((p) => p.id === l.productId)?.mode === "linear" &&
@@ -1281,7 +1296,7 @@ export default function Home() {
     setExtraDesignChanges(0);
     setExtraDesignAdaptations(0);
     setQuoteModule("print-to-go");
-    setSystemChoice("printing");
+    setSelectedSystems(["printing"]);
     setRigidDraft({
       materialId: "",
       width: 0.61,
@@ -1333,7 +1348,8 @@ export default function Home() {
     id: quoteId,
     folio: quoteId ? undefined : "",
     quoteModule,
-    systemChoice,
+    selectedSystems,
+    systemChoice: selectedSystems[0] || "printing",
     customerName,
     customerType,
     seller,
@@ -1349,18 +1365,17 @@ export default function Home() {
     subtotal,
     iva,
     total,
-    lines: quoteModule === "rigid" ? [] : lines,
-    rigidDraft:
-      quoteModule === "rigid"
-        ? {
-            ...rigidDraft,
-            vinylCost: rigidVinylCost,
-            operatorHours: rigidOperatorHours,
-            assistantHours: rigidAssistantHours,
-          }
-        : undefined,
+    lines: hasPrinting ? lines : [],
+    rigidDraft: hasRigid
+      ? {
+          ...rigidDraft,
+          vinylCost: rigidVinylCost,
+          operatorHours: rigidOperatorHours,
+          assistantHours: rigidAssistantHours,
+        }
+      : undefined,
     structureDraft,
-    procurementGroups: quoteModule === "rigid" ? [] : procurementGroups,
+    procurementGroups: hasPrinting ? procurementGroups : [],
     procurementFreight,
     designService,
     extraDesignChanges,
@@ -1368,11 +1383,9 @@ export default function Home() {
     designPrice,
     designCost,
     items: [
-      ...(quoteModule === "rigid"
-        ? rigidItem
-          ? [rigidItem]
-          : []
-        : rows.map((x) => {
+      ...(hasRigid && rigidItem ? [rigidItem] : []),
+      ...(hasPrinting
+        ? rows.map((x) => {
             const p = products.find((p) => p.id === x.line.productId)!,
               quantity =
                 p.mode === "linear" ? x.line.linearMeters : x.line.quantity;
@@ -1390,8 +1403,9 @@ export default function Home() {
               billableArea: x.result.bill,
               waste: x.result.waste,
             };
-          })),
-      ...(structureDraft.enabled && structureRecipeData
+          }))
+        : []),
+      ...(hasStructure && structureDraft.enabled && structureRecipeData
         ? [
             {
               type: "structure",
@@ -1405,7 +1419,7 @@ export default function Home() {
             },
           ]
         : []),
-      ...(designPrice > 0
+      ...(hasDesign && designPrice > 0
         ? [
             {
               type: "design",
@@ -1486,9 +1500,13 @@ export default function Home() {
     setExtraDesignChanges(data.extraDesignChanges || 0);
     setExtraDesignAdaptations(data.extraDesignAdaptations || 0);
     setQuoteModule(data.quoteModule || "print-to-go");
-    setSystemChoice(
-      data.systemChoice ||
-        (data.quoteModule === "rigid" ? "rigid-signage" : "printing"),
+    setSelectedSystems(
+      Array.isArray(data.selectedSystems) && data.selectedSystems.length
+        ? data.selectedSystems
+        : [
+            data.systemChoice ||
+              (data.quoteModule === "rigid" ? "rigid-signage" : "printing"),
+          ],
     );
     if (data.rigidDraft) setRigidDraft(data.rigidDraft);
     setLines(
@@ -1515,16 +1533,24 @@ export default function Home() {
     setStep(4);
     setModuleId("print-to-go");
   };
-  const steps = [
-    "Cliente",
-    "Sistema",
-    "Diseño",
-    "Impresión",
-    "Acabados",
-    "Estructura",
-    "Instalación",
-    "Revisión",
+  const workflowSteps: { id: string; label: string }[] = [
+    { id: "client", label: "Cliente" },
+    { id: "system", label: "Sistema" },
+    ...(hasDesign ? [{ id: "design", label: "Diseño gráfico" }] : []),
+    ...(hasPrinting ? [{ id: "printing", label: "Impresión" }] : []),
+    ...(hasRigid
+      ? [{ id: "rigid-signage", label: "Rígidos y señalética" }]
+      : []),
+    ...(hasStructure
+      ? [{ id: "structure", label: "Estructura y herrería" }]
+      : []),
+    ...(hasFinishes ? [{ id: "finishes", label: "Acabados" }] : []),
+    { id: "review", label: "Revisión" },
   ];
+  const currentStep =
+    workflowSteps[Math.min(step - 1, workflowSteps.length - 1)] ||
+    workflowSteps[0];
+  const currentStepId = currentStep.id;
   const selectedProducts = products.filter((p) =>
     lines.some((l) => l.productId === p.id),
   );
@@ -1547,7 +1573,7 @@ export default function Home() {
         record={preview}
         onEdit={() => {
           setPreview(null);
-          setStep(7);
+          setStep(workflowSteps.length);
         }}
         onNavigate={(id) => {
           setPreview(null);
@@ -1579,7 +1605,11 @@ export default function Home() {
               alt="Custom Graphics"
             />
             <div>
-              <small>{moduleLabel[quoteModule]}</small>
+              <small>
+                {selectedSystems.length > 1
+                  ? "Proyecto multidisciplinario"
+                  : moduleLabel[quoteModule]}
+              </small>
             </div>
           </div>
           <div className="header-actions">
@@ -1593,21 +1623,23 @@ export default function Home() {
         <section className="project-head compact">
           <div>
             <p className="eyebrow">NUEVA COTIZACIÓN</p>
-            <h1>{steps[step - 1]}</h1>
+            <h1>{currentStep.label}</h1>
             <p>
-              {step === 1
-                ? "Captura el cliente, responsable y tipo de proyecto."
-                : step === 2
-                  ? "Selecciona la familia y el sistema que corresponde al proyecto."
-                  : step === 3
-                    ? "Selecciona productos, medidas, materiales y equipo de producción."
-                    : step === 4
-                      ? "Configura los acabados particulares de cada concepto."
-                      : step === 5
-                        ? "Define los elementos estructurales cuando el módulo los requiera."
-                        : step === 6
-                          ? "Configura la instalación y sus condiciones."
-                          : "Comprueba costos, margen e impuestos antes de guardar."}
+              {currentStepId === "client"
+                ? "Captura el cliente, responsables y datos generales del proyecto."
+                : currentStepId === "system"
+                  ? "Selecciona todos los procesos que aplican; configuraremos cada uno paso a paso."
+                  : currentStepId === "design"
+                    ? "Define la preparación y el servicio de diseño gráfico."
+                    : currentStepId === "printing"
+                      ? "Configura productos impresos, medidas, materiales y equipos."
+                      : currentStepId === "rigid-signage"
+                        ? "Configura láminas rígidas, corte y complementos gráficos."
+                        : currentStepId === "structure"
+                          ? "Define perfiles, refuerzos, consumibles y fabricación."
+                          : currentStepId === "finishes"
+                            ? "Configura los acabados particulares de cada concepto."
+                            : "Comprueba costos, margen e impuestos antes de guardar."}
             </p>
           </div>
           <div className="folio">
@@ -1615,9 +1647,9 @@ export default function Home() {
           </div>
         </section>
         <nav className="steps">
-          {steps.map((s, i) => (
+          {workflowSteps.map((workflowStep, i) => (
             <button
-              key={s}
+              key={workflowStep.id}
               disabled={i + 1 > step}
               onClick={() => {
                 if (i + 1 <= step) {
@@ -1628,17 +1660,17 @@ export default function Home() {
               className={step === i + 1 ? "active" : step > i + 1 ? "done" : ""}
             >
               <span>{step > i + 1 ? "✓" : i + 1}</span>
-              {s}
+              {workflowStep.label}
             </button>
           ))}
         </nav>
         <div className="guided-workspace">
           <section className="main-card guided-card">
-            {step === 1 && (
+            {currentStepId === "client" && (
               <section className="step-panel">
                 <div className="card-title">
                   <div>
-                    <p className="eyebrow">PASO 1 DE 8</p>
+                    <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
                     <h2>Cliente y responsable</h2>
                     <p>
                       Primero identifica a quién pertenece el proyecto y quién
@@ -1816,59 +1848,62 @@ export default function Home() {
                 )}
               </section>
             )}
-            {step === 2 && (
+            {currentStepId === "system" && (
               <section className="step-panel system-step-panel">
                 <div className="card-title system-title">
                   <div>
-                    <p className="eyebrow">PASO 2 DE 8</p>
+                    <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
                     <h2>Sistema de Cotización de Proyectos Custom Graphics</h2>
                     <p>
-                      Selecciona el tipo de proyecto. Cada sistema conservará sus
-                      materiales, procesos, mano de obra y especificaciones técnicas.
+                      Selecciona todos los procesos que aplican al proyecto. El sistema
+                      habilitará su configuración en el orden operativo.
                     </p>
                   </div>
                 </div>
 
                 <div className="system-catalog">
                   <section className="system-family">
-                    <h3>Proyectos personalizados</h3>
+                    <div className="system-family-heading">
+                      <h3>Proyectos personalizados</h3>
+                      <span>{selectedSystems.length} módulo(s) incluido(s)</span>
+                    </div>
                     <div className="system-grid project-systems">
                       <button
-                        className={`system-option project ${systemChoice === "design" ? "selected" : ""}`}
-                        onClick={() => selectSystem("design")}
-                        aria-pressed={systemChoice === "design"}
+                        className={`system-option project ${selectedSystems.includes("design") ? "selected" : ""}`}
+                        onClick={() => toggleSystem("design")}
+                        aria-pressed={selectedSystems.includes("design")}
                       >
                         <span>01</span><strong>Diseño Gráfico</strong>
                         <small>Preparación de archivo, adaptación o desarrollo creativo.</small>
                       </button>
                       <button
-                        className={`system-option project ${systemChoice === "printing" ? "selected" : ""}`}
-                        onClick={() => selectSystem("printing")}
-                        aria-pressed={systemChoice === "printing"}
+                        className={`system-option project ${selectedSystems.includes("printing") ? "selected" : ""}`}
+                        onClick={() => toggleSystem("printing")}
+                        aria-pressed={selectedSystems.includes("printing")}
                       >
                         <span>02</span><strong>Impresión</strong>
                         <small>Lonas, viniles impresos y viniles de corte.</small>
                       </button>
                       <button
-                        className={`system-option project ${systemChoice === "rigid-signage" ? "selected" : ""}`}
-                        onClick={() => selectSystem("rigid-signage")}
-                        aria-pressed={systemChoice === "rigid-signage"}
+                        className={`system-option project ${selectedSystems.includes("rigid-signage") ? "selected" : ""}`}
+                        onClick={() => toggleSystem("rigid-signage")}
+                        aria-pressed={selectedSystems.includes("rigid-signage")}
                       >
                         <span>03</span><strong>Rígidos y Señalética</strong>
                         <small>Acrílico, PVC, panel, coroplast y complementos gráficos.</small>
                       </button>
                       <button
-                        className={`system-option project ${systemChoice === "structure" ? "selected" : ""}`}
-                        onClick={() => selectSystem("structure")}
-                        aria-pressed={systemChoice === "structure"}
+                        className={`system-option project ${selectedSystems.includes("structure") ? "selected" : ""}`}
+                        onClick={() => toggleSystem("structure")}
+                        aria-pressed={selectedSystems.includes("structure")}
                       >
                         <span>04</span><strong>Estructura y Herrería</strong>
                         <small>PTR, tubular, perfiles, consumibles y fabricación.</small>
                       </button>
                       <button
-                        className={`system-option project ${systemChoice === "finishes" ? "selected" : ""}`}
-                        onClick={() => selectSystem("finishes")}
-                        aria-pressed={systemChoice === "finishes"}
+                        className={`system-option project ${selectedSystems.includes("finishes") ? "selected" : ""}`}
+                        onClick={() => toggleSystem("finishes")}
+                        aria-pressed={selectedSystems.includes("finishes")}
                       >
                         <span>05</span><strong>Acabados</strong>
                         <small>Mano de obra y procesos manuales por concepto.</small>
@@ -1953,11 +1988,11 @@ export default function Home() {
                 </div>
               </section>
             )}
-            {step === 3 && (
+            {currentStepId === "design" && (
               <section className="step-panel">
                 <div className="card-title">
                   <div>
-                    <p className="eyebrow">PASO 3 DE 8</p>
+                    <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
                     <h2>Diseño del proyecto</h2>
                     <p>
                       Selecciona únicamente la preparación gráfica que necesita
@@ -1976,24 +2011,25 @@ export default function Home() {
                 />
               </section>
             )}
-            {step === 4 && (
+            {(currentStepId === "printing" ||
+              currentStepId === "rigid-signage") && (
               <section className="step-panel">
                 <div className="card-title">
                   <div>
-                    <p className="eyebrow">PASO 4 DE 8</p>
+                    <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
                     <h2>
-                      {quoteModule === "rigid"
+                      {currentStepId === "rigid-signage"
                         ? "Material rígido y procesos"
                         : "Impresión y productos"}
                     </h2>
                     <p>
-                      {quoteModule === "rigid"
+                      {currentStepId === "rigid-signage"
                         ? "Selecciona la lámina, medidas, corte y trabajo requerido."
                         : "Selecciona los productos y configura medidas, material, color y equipo."}
                     </p>
                   </div>
                 </div>
-                {quoteModule === "print-to-go" ? (
+                {currentStepId === "printing" ? (
                   <>
                     <div className="product-picker">
                       {products.map((p) => {
@@ -2194,11 +2230,11 @@ export default function Home() {
                 )}
               </section>
             )}
-            {step === 5 && (
+            {currentStepId === "finishes" && (
               <section className="step-panel">
                 <div className="card-title">
                   <div>
-                    <p className="eyebrow">PASO 5 DE 8</p>
+                    <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
                     <h2>Acabados por concepto</h2>
                     <p>
                       Revisa y define los acabados de cada concepto. Las
@@ -2239,7 +2275,7 @@ export default function Home() {
                 </div>
               </section>
             )}
-            {step === 6 && (
+            {currentStepId === "structure" && (
               <StructureConfigurator
                 lines={lines}
                 draft={structureDraft}
@@ -2253,7 +2289,7 @@ export default function Home() {
                 price={structurePrice}
               />
             )}
-            {step === 7 && (
+            {currentStepId === "installation" && (
               <ProcessStage
                 step="7"
                 title="Instalación"
@@ -2266,11 +2302,11 @@ export default function Home() {
                 ]}
               />
             )}
-            {step === 8 && (
+            {currentStepId === "review" && (
               <section className="step-panel">
                 <div className="card-title">
                   <div>
-                    <p className="eyebrow">PASO 8 DE 8</p>
+                    <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
                     <h2>Revisión final</h2>
                     <p>Confirma la cotización antes de guardar.</p>
                   </div>
@@ -2360,7 +2396,7 @@ export default function Home() {
                 </div>
               </section>
             )}
-            {step === 4 && incompleteCutLine && (
+            {currentStepId === "printing" && incompleteCutLine && (
               <div className="cut-selection-warning" role="alert">
                 <div>
                   <strong>⚠ Falta configurar el código de color</strong>
@@ -2409,13 +2445,15 @@ export default function Home() {
               >
                 ← Anterior
               </button>
-              <span>Paso {step} de 8</span>
+              <span>Paso {step} de {workflowSteps.length}</span>
               <button
                 className="primary"
                 disabled={
                   saving ||
-                  (step >= 4 && hasIncompleteCutSelection) ||
-                  (step === 1 &&
+                  (currentStepId !== "client" &&
+                    currentStepId !== "system" &&
+                    hasIncompleteCutSelection) ||
+                  (currentStepId === "client" &&
                     (!customerName ||
                       !seller ||
                       !closer ||
@@ -2424,16 +2462,18 @@ export default function Home() {
                       !quoteDate ||
                       !expirationDate ||
                       expirationDate < quoteDate)) ||
-                  (step === 4 &&
-                    (quoteModule === "rigid" ? !rigidMaterial : !lines.length))
+                  (currentStepId === "system" &&
+                    selectedSystems.length === 0) ||
+                  (currentStepId === "printing" && !lines.length) ||
+                  (currentStepId === "rigid-signage" && !rigidMaterial)
                 }
                 onClick={() => {
                   setActive(null);
-                  if (step === 8) saveQuote();
-                  else setStep(Math.min(8, step + 1));
+                  if (currentStepId === "review") saveQuote();
+                  else setStep(Math.min(workflowSteps.length, step + 1));
                 }}
               >
-                {step === 8
+                {currentStepId === "review"
                   ? saving
                     ? "Generando cotización..."
                     : "Generar cotización y PDF"
@@ -2449,7 +2489,10 @@ export default function Home() {
             <div className="totals detailed">
               <div>
                 <span>Conceptos</span>
-                <strong>{lines.length}</strong>
+                <strong>
+                  {(hasPrinting ? lines.length : 0) +
+                    (hasRigid && rigidMaterial ? 1 : 0)}
+                </strong>
               </div>
               <div>
                 <span>Costo de producción</span>
@@ -3230,7 +3273,7 @@ function StructureConfigurator({
     <section className="step-panel">
       <div className="card-title">
         <div>
-          <p className="eyebrow">PASO 6 DE 8</p>
+          <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
           <h2>Estructura del proyecto</h2>
           <p>
             Configura un bastidor de herrería para tensar lona o soportar el
