@@ -3273,7 +3273,7 @@ function StructureConfigurator({
     <section className="step-panel">
       <div className="card-title">
         <div>
-          <p className="eyebrow">PASO {step} DE {workflowSteps.length}</p>
+          <p className="eyebrow">MÓDULO DE ESTRUCTURA</p>
           <h2>Estructura del proyecto</h2>
           <p>
             Configura un bastidor de herrería para tensar lona o soportar el
