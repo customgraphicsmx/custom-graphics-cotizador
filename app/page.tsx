@@ -80,7 +80,8 @@ type SystemChoice =
   | "printing"
   | "rigid-signage"
   | "structure"
-  | "finishes";
+  | "finishes"
+  | "installation";
 type RigidQuoteDraft = {
   materialId: string;
   width: number;
@@ -770,9 +771,8 @@ export default function Home() {
     [saveError, setSaveError] = useState("");
   const [designService, setDesignService] = useState<DesignService>("DIS-00");
   const [quoteModule, setQuoteModule] = useState<QuoteModule>("print-to-go");
-  const [selectedSystems, setSelectedSystems] = useState<SystemChoice[]>([
-    "printing",
-  ]);
+  const [selectedSystems, setSelectedSystems] = useState<SystemChoice[]>([]);
+  const [installationPlan, setInstallationPlan] = useState("Sin instalación");
   const [rigidCatalog, setRigidCatalog] = useState<RigidMaterialRecord[]>([]);
   const [rigidLabor, setRigidLabor] = useState<RigidLaborRecord[]>([]);
   const [structureMaterials, setStructureMaterials] = useState<
@@ -1118,6 +1118,7 @@ export default function Home() {
     hasRigid = selectedSystems.includes("rigid-signage"),
     hasStructure = selectedSystems.includes("structure"),
     hasFinishes = selectedSystems.includes("finishes"),
+    hasInstallation = selectedSystems.includes("installation"),
     procurementFreight = hasPrinting
       ? procurementGroups.reduce((s, g) => s + g.shipping, 0)
       : 0,
@@ -1296,7 +1297,8 @@ export default function Home() {
     setExtraDesignChanges(0);
     setExtraDesignAdaptations(0);
     setQuoteModule("print-to-go");
-    setSelectedSystems(["printing"]);
+    setSelectedSystems([]);
+    setInstallationPlan("Sin instalación");
     setRigidDraft({
       materialId: "",
       width: 0.61,
@@ -1375,6 +1377,7 @@ export default function Home() {
         }
       : undefined,
     structureDraft,
+    installationPlan: hasInstallation ? installationPlan : "Sin instalación",
     procurementGroups: hasPrinting ? procurementGroups : [],
     procurementFreight,
     designService,
@@ -1508,6 +1511,7 @@ export default function Home() {
               (data.quoteModule === "rigid" ? "rigid-signage" : "printing"),
           ],
     );
+    setInstallationPlan(data.installationPlan || "Sin instalación");
     if (data.rigidDraft) setRigidDraft(data.rigidDraft);
     setLines(
       (data.lines || []).map((l: Line) => {
@@ -1545,6 +1549,7 @@ export default function Home() {
       ? [{ id: "structure", label: "Estructura y herrería" }]
       : []),
     ...(hasFinishes ? [{ id: "finishes", label: "Acabados" }] : []),
+    ...(hasInstallation ? [{ id: "installation", label: "Instalación" }] : []),
     { id: "review", label: "Revisión" },
   ];
   const currentStep =
@@ -1881,7 +1886,7 @@ export default function Home() {
                         onClick={() => toggleSystem("printing")}
                         aria-pressed={selectedSystems.includes("printing")}
                       >
-                        <span>02</span><strong>Impresión</strong>
+                        <span>02</span><strong>Gran Formato</strong>
                         <small>Lonas, viniles impresos y viniles de corte.</small>
                       </button>
                       <button
@@ -1913,7 +1918,11 @@ export default function Home() {
                         <small>Mano de obra y costos del proceso de pintura.</small>
                         <em>Próximo módulo</em>
                       </button>
-                      <button className="system-option workflow" disabled>
+                      <button
+                        className={`system-option workflow ${selectedSystems.includes("installation") ? "selected" : ""}`}
+                        onClick={() => toggleSystem("installation")}
+                        aria-pressed={selectedSystems.includes("installation")}
+                      >
                         <span>10</span><strong>Instalación</strong>
                         <small>Andamios, combustible, viáticos y maniobras.</small>
                       </button>
@@ -2291,15 +2300,20 @@ export default function Home() {
             )}
             {currentStepId === "installation" && (
               <ProcessStage
-                step="7"
+                step={String(step)}
+                totalSteps={workflowSteps.length}
                 title="Instalación"
-                description="Indica si el proyecto requiere instalación en sitio para preparar la siguiente etapa de costeo."
+                description="Define el alcance operativo que acompañará al proyecto."
                 options={[
                   "Sin instalación",
                   "Instalación de vinil",
                   "Instalación de lona",
-                  "Instalación de señalética",
+                  "Instalación de rígidos o señalética",
+                  "Instalación de estructura",
+                  "Instalación mixta",
                 ]}
+                value={installationPlan}
+                onChange={setInstallationPlan}
               />
             )}
             {currentStepId === "review" && (
@@ -3201,20 +3215,26 @@ function ModuleNotApplicable({
 }
 function ProcessStage({
   step,
+  totalSteps,
   title,
   description,
   options,
+  value,
+  onChange,
 }: {
   step: string;
+  totalSteps: number;
   title: string;
   description: string;
   options: string[];
+  value: string;
+  onChange: (value: string) => void;
 }) {
   return (
     <section className="step-panel">
       <div className="card-title">
         <div>
-          <p className="eyebrow">PASO {step} DE 8</p>
+          <p className="eyebrow">PASO {step} DE {totalSteps}</p>
           <h2>{title} del proyecto</h2>
           <p>{description}</p>
         </div>
@@ -3222,7 +3242,11 @@ function ProcessStage({
       <div className="process-stage-card">
         <label>
           Alcance previsto
-          <select defaultValue={options[0]} aria-label={`Alcance de ${title}`}>
+          <select
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            aria-label={`Alcance de ${title}`}
+          >
             {options.map((option) => (
               <option key={option}>{option}</option>
             ))}
@@ -3231,9 +3255,9 @@ function ProcessStage({
         <div className="process-stage-note">
           <strong>Etapa habilitada</strong>
           <span>
-            El cálculo detallado se integrará al construir el módulo de{" "}
-            {title.toLowerCase()}; por ahora puedes recorrer el flujo completo
-            sin que se modifiquen los costos vigentes.
+            La selección se guardará dentro de la cotización y se enviará con
+            la información técnica a producción cuando el proyecto se convierta
+            en venta.
           </span>
         </div>
       </div>
