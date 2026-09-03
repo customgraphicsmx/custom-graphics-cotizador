@@ -121,10 +121,10 @@ export async function POST(
     let projectId = text(quote.project_id);
 
     if (!projectId) {
-      const projectFolioResult = await client.query(
+      const projectFolioResult = await client.query<{ folio: string }>(
         "SELECT 'PRY-'||to_char(current_date,'YYYY')||'-'||lpad(nextval('project_folio_seq')::text,6,'0') folio",
       );
-      const projectResult = await client.query(
+      const projectResult = await client.query<{ id: string }>(
         `INSERT INTO projects
           (folio,client_id,name,customer_snapshot,estimator,closer,customer_type,quote_date,expiration_date,status)
          VALUES($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,'Venta')
@@ -157,11 +157,11 @@ export async function POST(
       );
     }
 
-    const versionNumberResult = await client.query(
+    const versionNumberResult = await client.query<{ version_no: number }>(
       "SELECT COALESCE(MAX(version_no),0)+1 version_no FROM quote_versions WHERE quote_id=$1",
       [id],
     );
-    const versionResult = await client.query(
+    const versionResult = await client.query<{ id: string }>(
       `INSERT INTO quote_versions
         (quote_id,version_no,status,subtotal,tax,total,snapshot)
        VALUES($1,$2,'Aceptada',$3,$4,$5,$6::jsonb)
@@ -181,7 +181,7 @@ export async function POST(
     const concepts: Array<{ id: string; item: JsonRecord }> = [];
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index];
-      const conceptResult = await client.query(
+      const conceptResult = await client.query<{ id: string }>(
         `INSERT INTO quote_concepts
           (quote_id,version_id,sequence_no,module_code,product_code,product_name,description,quantity,unit,unit_price,price,cost,technical_details)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb)
@@ -227,10 +227,10 @@ export async function POST(
       }
     }
 
-    const salesFolioResult = await client.query(
+    const salesFolioResult = await client.query<{ folio: string }>(
       "SELECT 'PV-'||to_char(current_date,'YYYY')||'-'||lpad(nextval('sales_order_folio_seq')::text,6,'0') folio",
     );
-    const salesResult = await client.query(
+    const salesResult = await client.query<{ id: string; folio: string }>(
       `INSERT INTO sales_orders
         (folio,project_id,quote_id,quote_version_id,customer_name,status,subtotal,tax,total,accepted_snapshot)
        VALUES($1,$2,$3,$4,$5,'Confirmada',$6,$7,$8,$9::jsonb)
@@ -249,10 +249,10 @@ export async function POST(
     );
     const salesOrder = salesResult.rows[0];
 
-    const productionFolioResult = await client.query(
+    const productionFolioResult = await client.query<{ folio: string }>(
       "SELECT 'OP-'||to_char(current_date,'YYYY')||'-'||lpad(nextval('production_order_folio_seq')::text,6,'0') folio",
     );
-    const productionResult = await client.query(
+    const productionResult = await client.query<{ id: string; folio: string }>(
       `INSERT INTO production_orders
         (folio,sales_order_id,project_id,quote_id,status,technical_details,notes)
        VALUES($1,$2,$3,$4,'Pendiente',$5::jsonb,$6)
@@ -348,10 +348,10 @@ export async function POST(
             : number(item.cost),
         technical_details: item,
       }));
-      const purchaseFolioResult = await client.query(
+      const purchaseFolioResult = await client.query<{ folio: string }>(
         "SELECT 'OC-'||to_char(current_date,'YYMMDD')||'-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,6)) folio",
       );
-      const purchaseResult = await client.query(
+      const purchaseResult = await client.query<{ id: string; folio: string; supplier_name: string; status: string; total: number }>(
         `INSERT INTO purchase_orders
           (folio,supplier_name,quote_folio,project_name,status,items,subtotal,freight,tax,total,requested_by,notes,project_id,sales_order_id,production_order_id,auto_generated)
          VALUES($1,$2,$3,$4,'Borrador automático',$5::jsonb,$6,$7,$8,$9,$10,$11,$12,$13,$14,true)
