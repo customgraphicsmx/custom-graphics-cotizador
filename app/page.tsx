@@ -550,7 +550,11 @@ const designBriefSummary = (brief: DesignBrief) =>
     brief.application && `Aplicación: ${brief.application}`,
     brief.measurements && `Medidas/ubicación: ${brief.measurements}`,
     brief.mainMessage && `Mensaje: ${brief.mainMessage}`,
+    brief.suppliedAssets && `Archivos disponibles: ${brief.suppliedAssets}`,
+    brief.styleReferences && `Estilo/referencias: ${brief.styleReferences}`,
+    brief.audience && `Público objetivo: ${brief.audience}`,
     brief.deliveryDate && `Fecha límite: ${brief.deliveryDate}`,
+    brief.observations && `Observaciones: ${brief.observations}`,
     `Incluye ${brief.proposalsIncluded || 1} propuesta(s) y ${brief.revisionsIncluded || 0} ronda(s) de cambios.`,
     `Autorización de brief: ${brief.authorized ? "aceptada" : "pendiente"}.`,
   ]
