@@ -1598,7 +1598,7 @@ export default function Home() {
               {step === 1
                 ? "Captura el cliente, responsable y tipo de proyecto."
                 : step === 2
-                  ? "Define si el proyecto requiere preparación o diseño gráfico."
+                  ? "Selecciona la familia y el sistema que corresponde al proyecto."
                   : step === 3
                     ? "Selecciona productos, medidas, materiales y equipo de producción."
                     : step === 4
