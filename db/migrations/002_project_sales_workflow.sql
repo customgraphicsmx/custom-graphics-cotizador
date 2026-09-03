@@ -1,5 +1,3 @@
-BEGIN;
-
 CREATE SEQUENCE IF NOT EXISTS project_folio_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS sales_order_folio_seq START 1;
 CREATE SEQUENCE IF NOT EXISTS production_order_folio_seq START 1;
@@ -183,5 +181,3 @@ CREATE INDEX IF NOT EXISTS production_orders_project_idx ON production_orders(pr
 CREATE INDEX IF NOT EXISTS purchase_orders_project_idx ON purchase_orders(project_id);
 CREATE INDEX IF NOT EXISTS invoices_sales_order_idx ON invoices(sales_order_id);
 CREATE INDEX IF NOT EXISTS payments_project_idx ON payments(project_id);
-
-COMMIT;
