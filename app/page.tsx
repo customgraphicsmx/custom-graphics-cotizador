@@ -7662,18 +7662,36 @@ function CommercialTable({
   onNewQuote: () => void;
 }) {
   const [search, setSearch] = useState("");
+  const [convertingId, setConvertingId] = useState("");
+  const [conversionError, setConversionError] = useState("");
   const filtered = records.filter((r) =>
     `${r.folio} ${r.customer_name} ${r.seller}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
-  const changeStatus = async (id: string) => {
-    await fetch(`/api/quotes/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status: "Venta" }),
-    });
-    reload();
+  const convertToSale = async (id: string) => {
+    setConvertingId(id);
+    setConversionError("");
+    try {
+      const response = await fetch(`/api/quotes/${id}/convert-to-sale`, {
+        method: "POST",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          result?.error || "No fue posible convertir la cotización.",
+        );
+      }
+      reload();
+    } catch (error) {
+      setConversionError(
+        error instanceof Error
+          ? error.message
+          : "No fue posible convertir la cotización.",
+      );
+    } finally {
+      setConvertingId("");
+    }
   };
   return (
     <div className="business-content">
@@ -7693,6 +7711,9 @@ function CommercialTable({
           </button>
         )}
       </div>
+      {conversionError && (
+        <div className="quote-warning">{conversionError}</div>
+      )}
       <div className="list-toolbar">
         <input
           value={search}
@@ -7732,9 +7753,12 @@ function CommercialTable({
                 r.status !== "Venta" && (
                   <button
                     className="sale-action"
-                    onClick={() => changeStatus(r.id)}
+                    disabled={convertingId === r.id}
+                    onClick={() => convertToSale(r.id)}
                   >
-                    Aceptar
+                    {convertingId === r.id
+                      ? "Generando órdenes..."
+                      : "Convertir a venta"}
                   </button>
                 )
               )}
@@ -7758,7 +7782,9 @@ function HistoryView({
   const [records, setRecords] = useState<QuoteRecord[]>([]),
     [search, setSearch] = useState(""),
     [status, setStatus] = useState("Todos"),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [convertingId, setConvertingId] = useState(""),
+    [conversionError, setConversionError] = useState("");
   const load = () =>
     fetch("/api/quotes")
       .then((r) => r.json())
@@ -7768,11 +7794,36 @@ function HistoryView({
     load();
   }, []);
   const changeStatus = async (id: string, next: string) => {
-    await fetch(`/api/quotes/${id}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ status: next }),
-    });
+    setConversionError("");
+    if (next === "Venta") {
+      setConvertingId(id);
+      try {
+        const response = await fetch(
+          `/api/quotes/${id}/convert-to-sale`,
+          { method: "POST" },
+        );
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(
+            result?.error || "No fue posible convertir la cotización.",
+          );
+        }
+      } catch (error) {
+        setConversionError(
+          error instanceof Error
+            ? error.message
+            : "No fue posible convertir la cotización.",
+        );
+      } finally {
+        setConvertingId("");
+      }
+    } else {
+      await fetch(`/api/quotes/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ status: next }),
+      });
+    }
     load();
   };
   const filtered = records.filter(
@@ -7813,6 +7864,9 @@ function HistoryView({
             ＋ Nueva cotización
           </button>
         </div>
+        {conversionError && (
+          <div className="quote-warning">{conversionError}</div>
+        )}
         <div className="history-filters">
           <input
             value={search}
@@ -7874,9 +7928,12 @@ function HistoryView({
                   {record.status !== "Venta" && (
                     <button
                       className="sale-action"
+                      disabled={convertingId === record.id}
                       onClick={() => changeStatus(record.id, "Venta")}
                     >
-                      Convertir a venta
+                      {convertingId === record.id
+                        ? "Generando órdenes..."
+                        : "Convertir a venta"}
                     </button>
                   )}
                 </div>
