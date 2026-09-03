@@ -9,6 +9,20 @@ type WeedComplexity = "simple" | "media" | "alta";
 type CustomerType =
   "" | "Cliente Maquila" | "Cliente Frecuente" | "Cliente Final";
 type DesignService = "DIS-00" | "DIS-01" | "DIS-02" | "DIS-03" | "DIS-04";
+type DesignBrief = {
+  objective: string;
+  application: string;
+  measurements: string;
+  mainMessage: string;
+  suppliedAssets: string;
+  styleReferences: string;
+  audience: string;
+  deliveryDate: string;
+  observations: string;
+  proposalsIncluded: number;
+  revisionsIncluded: number;
+  authorized: boolean;
+};
 type QuoteRecord = {
   id: string;
   folio: string;
@@ -402,37 +416,39 @@ const customerMargins: Record<Exclude<CustomerType, "">, number> = {
 };
 const designServices: Record<
   DesignService,
-  { name: string; description: string; price: number; cost: number }
+  { name: string; description: string; price: number; cost: number; specialQuote?: boolean }
 > = {
   "DIS-00": {
-    name: "Archivo listo para imprimir",
-    description: "Revisión técnica y preparación para producción.",
+    name: "Archivo listo para producción",
+    description: "Revisión técnica de resolución, escala, formato y viabilidad de producción.",
     price: 0,
     cost: 0,
   },
   "DIS-01": {
-    name: "Ajuste básico de archivo",
-    description: "Cambio de medida, textos, acomodo menor o exportación.",
+    name: "Preparación técnica para producción",
+    description: "Escala, sangrías, rebase, panelizado, líneas de corte, conversión y armado técnico.",
     price: 150,
     cost: 72,
   },
   "DIS-02": {
-    name: "Adaptación de diseño",
-    description: "Adaptación de un arte existente al formato solicitado.",
-    price: 300,
-    cost: 144,
+    name: "Adaptación a medida o material",
+    description: "Mismo diseño preparado para otra medida, versión, material o formato.",
+    price: 150,
+    cost: 72,
   },
   "DIS-03": {
-    name: "Diseño básico desde cero",
-    description: "Una composición gráfica para lona o vinil.",
-    price: 600,
-    cost: 288,
+    name: "Corrección de archivo",
+    description: "Vectorización, limpieza, reconstrucción o corrección de un archivo no apto para producción.",
+    price: 0,
+    cost: 0,
+    specialQuote: true,
   },
   "DIS-04": {
-    name: "Diseño avanzado",
-    description: "Composición con mayor contenido y tratamiento gráfico.",
-    price: 900,
-    cost: 432,
+    name: "Diseño creativo",
+    description: "Desarrollo o rediseño importante con alcance definido en el brief y autorización del cliente.",
+    price: 0,
+    cost: 0,
+    specialQuote: true,
   },
 };
 const taxRegimes = [
@@ -514,6 +530,32 @@ const money = (v: number) =>
     currency: "MXN",
     maximumFractionDigits: 0,
   }).format(v);
+const blankDesignBrief = (): DesignBrief => ({
+  objective: "",
+  application: "",
+  measurements: "",
+  mainMessage: "",
+  suppliedAssets: "",
+  styleReferences: "",
+  audience: "",
+  deliveryDate: "",
+  observations: "",
+  proposalsIncluded: 1,
+  revisionsIncluded: 2,
+  authorized: false,
+});
+const designBriefSummary = (brief: DesignBrief) =>
+  [
+    brief.objective && `Objetivo: ${brief.objective}`,
+    brief.application && `Aplicación: ${brief.application}`,
+    brief.measurements && `Medidas/ubicación: ${brief.measurements}`,
+    brief.mainMessage && `Mensaje: ${brief.mainMessage}`,
+    brief.deliveryDate && `Fecha límite: ${brief.deliveryDate}`,
+    `Incluye ${brief.proposalsIncluded || 1} propuesta(s) y ${brief.revisionsIncluded || 0} ronda(s) de cambios.`,
+    `Autorización de brief: ${brief.authorized ? "aceptada" : "pendiente"}.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
 function automaticGrommets(l: Line) {
   const perimeter = 2 * (l.width + l.height);
   if (l.grommetPattern === "OJ-00") return 0;
@@ -808,6 +850,8 @@ export default function Home() {
   });
   const [extraDesignChanges, setExtraDesignChanges] = useState(0);
   const [extraDesignAdaptations, setExtraDesignAdaptations] = useState(0);
+  const [specialDesignPrice, setSpecialDesignPrice] = useState(0);
+  const [designBrief, setDesignBrief] = useState<DesignBrief>(blankDesignBrief);
   const [moduleId, setModuleId] = useState<string | null>(null);
   const [platformSection, setPlatformSection] = useState("dashboard");
   const [collapsedGroups, setCollapsedGroups] = useState<string[]>([]);
@@ -1124,14 +1168,18 @@ export default function Home() {
       : 0,
     designBase = designServices[designService],
     designPrice = hasDesign
-      ? designBase.price +
-        extraDesignChanges * 150 +
-        extraDesignAdaptations * 100
+      ? (designBase.specialQuote
+          ? specialDesignPrice
+          : designBase.price +
+            extraDesignChanges * 150 +
+            extraDesignAdaptations * 100)
       : 0,
     designCost = hasDesign
-      ? designBase.cost +
-        extraDesignChanges * 72 +
-        extraDesignAdaptations * 48
+      ? (designBase.specialQuote
+          ? Math.round(specialDesignPrice * 0.48)
+          : designBase.cost +
+            extraDesignChanges * 72 +
+            extraDesignAdaptations * 48)
       : 0,
     appliedStructure = hasStructure
       ? calculateStructure()
@@ -1296,6 +1344,8 @@ export default function Home() {
     setDesignService("DIS-00");
     setExtraDesignChanges(0);
     setExtraDesignAdaptations(0);
+    setSpecialDesignPrice(0);
+    setDesignBrief(blankDesignBrief());
     setQuoteModule("print-to-go");
     setSelectedSystems([]);
     setInstallationPlan("Sin instalación");
@@ -1383,6 +1433,8 @@ export default function Home() {
     designService,
     extraDesignChanges,
     extraDesignAdaptations,
+    specialDesignPrice,
+    designBrief,
     designPrice,
     designCost,
     items: [
@@ -1427,7 +1479,7 @@ export default function Home() {
             {
               type: "design",
               product: `Diseño gráfico · ${designBase.name}`,
-              description: `${designBase.description} Incluye una propuesta y dos rondas de cambios menores.${extraDesignChanges ? ` ${extraDesignChanges} cambio(s) adicional(es).` : ""}${extraDesignAdaptations ? ` ${extraDesignAdaptations} adaptación(es) adicional(es).` : ""}`,
+              description: `${designBase.description}${designBase.specialQuote ? ` ${designBriefSummary(designBrief)}` : ` Incluye una propuesta y dos rondas de cambios menores.`}${extraDesignChanges ? ` ${extraDesignChanges} cambio(s) adicional(es).` : ""}${extraDesignAdaptations ? ` ${extraDesignAdaptations} adaptación(es) adicional(es).` : ""}`,
               quantity: 1,
               unit: "servicio",
               unitPrice: designPrice,
@@ -1502,6 +1554,8 @@ export default function Home() {
     setDesignService(data.designService || "DIS-00");
     setExtraDesignChanges(data.extraDesignChanges || 0);
     setExtraDesignAdaptations(data.extraDesignAdaptations || 0);
+    setSpecialDesignPrice(data.specialDesignPrice || 0);
+    setDesignBrief({ ...blankDesignBrief(), ...(data.designBrief || {}) });
     setQuoteModule(data.quoteModule || "print-to-go");
     setSelectedSystems(
       Array.isArray(data.selectedSystems) && data.selectedSystems.length
@@ -2016,6 +2070,10 @@ export default function Home() {
                   setExtraChanges={setExtraDesignChanges}
                   extraAdaptations={extraDesignAdaptations}
                   setExtraAdaptations={setExtraDesignAdaptations}
+                  specialPrice={specialDesignPrice}
+                  setSpecialPrice={setSpecialDesignPrice}
+                  brief={designBrief}
+                  setBrief={setDesignBrief}
                   total={designPrice}
                 />
               </section>
@@ -3689,6 +3747,10 @@ function DesignServicePanel({
   setExtraChanges,
   extraAdaptations,
   setExtraAdaptations,
+  specialPrice,
+  setSpecialPrice,
+  brief,
+  setBrief,
   total,
 }: {
   service: DesignService;
@@ -3697,73 +3759,101 @@ function DesignServicePanel({
   setExtraChanges: (value: number) => void;
   extraAdaptations: number;
   setExtraAdaptations: (value: number) => void;
+  specialPrice: number;
+  setSpecialPrice: (value: number) => void;
+  brief: DesignBrief;
+  setBrief: (value: DesignBrief) => void;
   total: number;
 }) {
-  const selected = designServices[service];
+  const selected = designServices[service],
+    isSpecial = Boolean(selected.specialQuote),
+    updateBrief = (field: keyof DesignBrief, value: string | number | boolean) =>
+      setBrief({ ...brief, [field]: value });
   return (
     <section className="design-service-panel">
       <div className="design-service-head">
         <div>
-          <p className="eyebrow">DISEÑO GRÁFICO</p>
-          <h3>Preparación y diseño del proyecto</h3>
+          <p className="eyebrow">PREPRENSA Y DISEÑO</p>
+          <h3>Preparación técnica del proyecto</h3>
           <small>
-            Tarifas cerradas. Una propuesta y dos rondas de cambios menores
-            incluidas.
+            La revisión técnica está incluida. Sólo se cobra la intervención
+            necesaria para dejar el proyecto listo para producir.
           </small>
         </div>
         <strong>{money(total)}</strong>
       </div>
-      <div className="design-service-grid">
-        <label className="design-main-select">
-          Servicio requerido
-          <select
-            value={service}
-            onChange={(e) => {
-              setService(e.target.value as DesignService);
+      <div className="design-service-cards" role="radiogroup" aria-label="Servicio de preprensa o diseño">
+        {Object.entries(designServices).map(([code, item]) => (
+          <button
+            type="button"
+            key={code}
+            className={`design-service-card ${service === code ? "selected" : ""}`}
+            aria-pressed={service === code}
+            onClick={() => {
+              setService(code as DesignService);
               setExtraChanges(0);
               setExtraAdaptations(0);
+              if (!item.specialQuote) setSpecialPrice(0);
             }}
           >
-            {Object.entries(designServices).map(([code, item]) => (
-              <option key={code} value={code}>
-                [{code}] {item.name} · {money(item.price)}
-              </option>
-            ))}
-          </select>
-          <small>{selected.description}</small>
-        </label>
-        <label>
-          Cambios adicionales
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={extraChanges}
-            onChange={(e) =>
-              setExtraChanges(Math.max(0, Math.floor(Number(e.target.value))))
-            }
-          />
-          <small>$150 cada uno, después de los dos incluidos.</small>
-        </label>
-        <label>
-          Adaptaciones adicionales
-          <input
-            type="number"
-            min="0"
-            step="1"
-            value={extraAdaptations}
-            onChange={(e) =>
-              setExtraAdaptations(
-                Math.max(0, Math.floor(Number(e.target.value))),
-              )
-            }
-          />
-          <small>$100 por medida o formato adicional.</small>
-        </label>
+            <small>{code}</small>
+            <strong>{item.name}</strong>
+            <span>{item.description}</span>
+            <em>{item.specialQuote ? "Cotización especial" : money(item.price)}</em>
+          </button>
+        ))}
       </div>
+      {isSpecial ? (
+        <div className="design-brief">
+          <div className="design-brief-head">
+            <div>
+              <p className="eyebrow">BRIEF Y AUTORIZACIÓN</p>
+              <h4>{service === "DIS-04" ? "Brief de diseño creativo" : "Alcance de corrección de archivo"}</h4>
+              <small>Este alcance se integra a la cotización para que el cliente lo revise y autorice.</small>
+            </div>
+            <label>
+              Precio del servicio
+              <input type="number" min="0" value={specialPrice} onChange={(e) => setSpecialPrice(Math.max(0, Number(e.target.value)))} />
+            </label>
+          </div>
+          <div className="design-brief-grid">
+            <label>Objetivo del proyecto<textarea value={brief.objective} onChange={(e) => updateBrief("objective", e.target.value)} placeholder="Qué debe resolver o comunicar el proyecto" /></label>
+            <label>Producto, aplicación y ubicación<textarea value={brief.application} onChange={(e) => updateBrief("application", e.target.value)} placeholder="Lona, fachada, vinil, rígido; dónde se instalará" /></label>
+            <label>Medidas y condiciones<textarea value={brief.measurements} onChange={(e) => updateBrief("measurements", e.target.value)} placeholder="Medidas, orientación, restricciones y material previsto" /></label>
+            <label>Mensaje y textos obligatorios<textarea value={brief.mainMessage} onChange={(e) => updateBrief("mainMessage", e.target.value)} placeholder="Textos, teléfonos, promociones y datos obligatorios" /></label>
+            <label>Archivos disponibles<textarea value={brief.suppliedAssets} onChange={(e) => updateBrief("suppliedAssets", e.target.value)} placeholder="Logotipo, fotos, tipografías, manual de marca" /></label>
+            <label>Estilo y referencias<textarea value={brief.styleReferences} onChange={(e) => updateBrief("styleReferences", e.target.value)} placeholder="Colores, estilo, referencias o competidores" /></label>
+            <label>Público objetivo<input value={brief.audience} onChange={(e) => updateBrief("audience", e.target.value)} placeholder="A quién va dirigido" /></label>
+            <label>Fecha límite<input type="date" value={brief.deliveryDate} onChange={(e) => updateBrief("deliveryDate", e.target.value)} /></label>
+            <label className="design-brief-wide">Observaciones<textarea value={brief.observations} onChange={(e) => updateBrief("observations", e.target.value)} placeholder="Cualquier condición acordada con el cliente" /></label>
+            <label>Propuestas incluidas<input type="number" min="1" value={brief.proposalsIncluded} onChange={(e) => updateBrief("proposalsIncluded", Math.max(1, Math.floor(Number(e.target.value))))} /></label>
+            <label>Rondas de cambios incluidas<input type="number" min="0" value={brief.revisionsIncluded} onChange={(e) => updateBrief("revisionsIncluded", Math.max(0, Math.floor(Number(e.target.value))))} /></label>
+          </div>
+          <label className="design-authorization">
+            <input type="checkbox" checked={brief.authorized} onChange={(e) => updateBrief("authorized", e.target.checked)} />
+            <span>El cliente autoriza este alcance, el costo y las propuestas/cambios incluidos.</span>
+          </label>
+        </div>
+      ) : (
+        <div className="design-service-grid">
+          <label>
+            Cambios adicionales
+            <input type="number" min="0" step="1" value={extraChanges} onChange={(e) => setExtraChanges(Math.max(0, Math.floor(Number(e.target.value))))} />
+            <small>$150 cada uno, después de las dos rondas incluidas.</small>
+          </label>
+          <label>
+            Adaptaciones adicionales
+            <input type="number" min="0" step="1" value={extraAdaptations} onChange={(e) => setExtraAdaptations(Math.max(0, Math.floor(Number(e.target.value))))} />
+            <small>$100 por medida o formato adicional.</small>
+          </label>
+          <div className="design-conditions">
+            <strong>Control técnico</strong>
+            <small>Si el archivo requiere una corrección mayor, cambia a “Corrección de archivo” y define el alcance.</small>
+          </div>
+        </div>
+      )}
       <p className="design-exclusion">
-        No incluye creación de logotipos, identidad visual ni desarrollo de
-        marca.
+        La revisión técnica no sustituye un servicio creativo. Cambios de concepto, identidad visual, compra de imágenes o desarrollo de marca se cotizan por separado.
       </p>
     </section>
   );
