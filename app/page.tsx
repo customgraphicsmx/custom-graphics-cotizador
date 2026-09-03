@@ -75,6 +75,12 @@ type RigidLaborRecord = {
   updated_at: number;
 };
 type QuoteModule = "print-to-go" | "rigid" | "signage" | "letters3d";
+type SystemChoice =
+  | "design"
+  | "printing"
+  | "rigid-signage"
+  | "structure"
+  | "finishes";
 type RigidQuoteDraft = {
   materialId: string;
   width: number;
@@ -764,6 +770,8 @@ export default function Home() {
     [saveError, setSaveError] = useState("");
   const [designService, setDesignService] = useState<DesignService>("DIS-00");
   const [quoteModule, setQuoteModule] = useState<QuoteModule>("print-to-go");
+  const [systemChoice, setSystemChoice] =
+    useState<SystemChoice>("printing");
   const [rigidCatalog, setRigidCatalog] = useState<RigidMaterialRecord[]>([]);
   const [rigidLabor, setRigidLabor] = useState<RigidLaborRecord[]>([]);
   const [structureMaterials, setStructureMaterials] = useState<
@@ -846,6 +854,20 @@ export default function Home() {
       signage: "Señalética",
       letters3d: "Letreros 3D",
     };
+  const selectSystem = (choice: SystemChoice) => {
+    setSystemChoice(choice);
+    if (choice === "rigid-signage") {
+      setQuoteModule("rigid");
+      return;
+    }
+    setQuoteModule("print-to-go");
+    if (choice === "design" && designService === "DIS-00") {
+      setDesignService("DIS-01");
+    }
+    if (choice === "structure") {
+      setStructureDraft((current) => ({ ...current, enabled: true }));
+    }
+  };
   const calculateStructure = () => {
     if (!structureDraft.enabled) return { cost: 0, price: 0 };
     const line =
@@ -1259,6 +1281,7 @@ export default function Home() {
     setExtraDesignChanges(0);
     setExtraDesignAdaptations(0);
     setQuoteModule("print-to-go");
+    setSystemChoice("printing");
     setRigidDraft({
       materialId: "",
       width: 0.61,
@@ -1310,6 +1333,7 @@ export default function Home() {
     id: quoteId,
     folio: quoteId ? undefined : "",
     quoteModule,
+    systemChoice,
     customerName,
     customerType,
     seller,
@@ -1462,6 +1486,10 @@ export default function Home() {
     setExtraDesignChanges(data.extraDesignChanges || 0);
     setExtraDesignAdaptations(data.extraDesignAdaptations || 0);
     setQuoteModule(data.quoteModule || "print-to-go");
+    setSystemChoice(
+      data.systemChoice ||
+        (data.quoteModule === "rigid" ? "rigid-signage" : "printing"),
+    );
     if (data.rigidDraft) setRigidDraft(data.rigidDraft);
     setLines(
       (data.lines || []).map((l: Line) => {
@@ -1789,54 +1817,139 @@ export default function Home() {
               </section>
             )}
             {step === 2 && (
-              <section className="step-panel">
-                <div className="card-title">
+              <section className="step-panel system-step-panel">
+                <div className="card-title system-title">
                   <div>
                     <p className="eyebrow">PASO 2 DE 8</p>
-                    <h2>Selecciona el sistema</h2>
+                    <h2>Sistema de Cotización de Proyectos Custom Graphics</h2>
                     <p>
-                      Elige el sistema principal; los pasos siguientes mostrarán
-                      los procesos que aplican al proyecto.
+                      Selecciona el tipo de proyecto. Cada sistema conservará sus
+                      materiales, procesos, mano de obra y especificaciones técnicas.
                     </p>
                   </div>
                 </div>
-                <div className="project-module-picker">
-                  <button
-                    className={quoteModule === "print-to-go" ? "active" : ""}
-                    onClick={() => setQuoteModule("print-to-go")}
-                  >
-                    <span>01</span>
-                    <strong>Gran Formato</strong>
-                    <small>
-                      Impresión, acabados, estructura e instalación.
-                    </small>
-                  </button>
-                  <button
-                    className={quoteModule === "rigid" ? "active" : ""}
-                    onClick={() => setQuoteModule("rigid")}
-                  >
-                    <span>02</span>
-                    <strong>Materiales Rígidos</strong>
-                    <small>Láminas, corte y mano de obra.</small>
-                  </button>
-                  <button disabled>
-                    <span>03</span>
-                    <strong>Señalética</strong>
-                    <small>Próxima configuración de costos</small>
-                  </button>
-                  <button disabled>
-                    <span>04</span>
-                    <strong>Letreros 3D</strong>
-                    <small>Próxima configuración de costos</small>
-                  </button>
-                </div>
-                <div className="flow-note">
-                  <strong>Flujo del proyecto</strong>
-                  <span>
-                    Diseño, impresión, acabados, estructura, instalación y
-                    revisión se habilitan sólo cuando corresponden al sistema
-                    seleccionado.
-                  </span>
+
+                <div className="system-catalog">
+                  <section className="system-family">
+                    <h3>Proyectos personalizados</h3>
+                    <div className="system-grid project-systems">
+                      <button
+                        className={`system-option project ${systemChoice === "design" ? "selected" : ""}`}
+                        onClick={() => selectSystem("design")}
+                        aria-pressed={systemChoice === "design"}
+                      >
+                        <span>01</span><strong>Diseño Gráfico</strong>
+                        <small>Preparación de archivo, adaptación o desarrollo creativo.</small>
+                      </button>
+                      <button
+                        className={`system-option project ${systemChoice === "printing" ? "selected" : ""}`}
+                        onClick={() => selectSystem("printing")}
+                        aria-pressed={systemChoice === "printing"}
+                      >
+                        <span>02</span><strong>Impresión</strong>
+                        <small>Lonas, viniles impresos y viniles de corte.</small>
+                      </button>
+                      <button
+                        className={`system-option project ${systemChoice === "rigid-signage" ? "selected" : ""}`}
+                        onClick={() => selectSystem("rigid-signage")}
+                        aria-pressed={systemChoice === "rigid-signage"}
+                      >
+                        <span>03</span><strong>Rígidos y Señalética</strong>
+                        <small>Acrílico, PVC, panel, coroplast y complementos gráficos.</small>
+                      </button>
+                      <button
+                        className={`system-option project ${systemChoice === "structure" ? "selected" : ""}`}
+                        onClick={() => selectSystem("structure")}
+                        aria-pressed={systemChoice === "structure"}
+                      >
+                        <span>04</span><strong>Estructura y Herrería</strong>
+                        <small>PTR, tubular, perfiles, consumibles y fabricación.</small>
+                      </button>
+                      <button
+                        className={`system-option project ${systemChoice === "finishes" ? "selected" : ""}`}
+                        onClick={() => selectSystem("finishes")}
+                        aria-pressed={systemChoice === "finishes"}
+                      >
+                        <span>05</span><strong>Acabados</strong>
+                        <small>Mano de obra y procesos manuales por concepto.</small>
+                      </button>
+                      <button className="system-option planned" disabled>
+                        <span>06</span><strong>Esmaltado</strong>
+                        <small>Mano de obra y costos del proceso de pintura.</small>
+                        <em>Próximo módulo</em>
+                      </button>
+                      <button className="system-option workflow" disabled>
+                        <span>10</span><strong>Instalación</strong>
+                        <small>Andamios, combustible, viáticos y maniobras.</small>
+                      </button>
+                      <button className="system-option workflow" disabled>
+                        <span>11</span><strong>Embalaje y Envío</strong>
+                        <small>Empaque, embalaje, paquetería y entrega.</small>
+                      </button>
+                      <button className="system-option workflow" disabled>
+                        <span>12</span><strong>Revisión de Proyecto</strong>
+                        <small>Costos totales, descuento, margen e impuestos.</small>
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="system-family">
+                    <h3>Letreros para interior y exterior</h3>
+                    <div className="system-grid letter-systems">
+                      {[
+                        ["10", "EasyClear", "Letreros con base de acrílico."],
+                        ["11", "EasyCut", "Letreros con base de PVC."],
+                        ["12", "EasyPop", "Panel de aluminio y letras en PVC de 20 mm."],
+                        ["13", "EasyBox", "Con o sin bastidor y letra de aluminio sin luz."],
+                        ["14", "EasyHalo", "Con o sin bastidor y letra de aluminio retroiluminada."],
+                        ["15", "EasyLux", "Acrílico iluminado con o sin bastidor."],
+                      ].map(([number, name, description]) => (
+                        <button className="system-option letter planned" disabled key={name}>
+                          <span>{number}</span><strong>{name}</strong><small>{description}</small>
+                          <em>Siguiente etapa</em>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="system-grid shared-flow">
+                      <button className="system-option workflow" disabled><span>10</span><strong>Instalación</strong><small>Andamios, combustible, viáticos y maniobras.</small></button>
+                      <button className="system-option workflow" disabled><span>11</span><strong>Embalaje y Envío</strong><small>Costos de empaque y transporte.</small></button>
+                      <button className="system-option workflow" disabled><span>12</span><strong>Revisión de Proyecto</strong><small>Costos totales, descuentos y margen.</small></button>
+                    </div>
+                  </section>
+
+                  <section className="system-family">
+                    <h3>Letreros tipo bandera</h3>
+                    <div className="system-grid placeholder-systems">
+                      {[1, 2, 3, 4, 5].map((item) => (
+                        <button className="system-option flag planned" disabled key={item}>
+                          <span>{String(item).padStart(2, "0")}</span>
+                          <strong>Modelo por definir</strong><small>Receta técnica pendiente.</small>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="system-grid shared-flow">
+                      <button className="system-option workflow" disabled><span>10</span><strong>Instalación</strong><small>Maniobras y viáticos.</small></button>
+                      <button className="system-option workflow" disabled><span>11</span><strong>Embalaje y Envío</strong><small>Empaque y transporte.</small></button>
+                      <button className="system-option workflow" disabled><span>12</span><strong>Revisión de Proyecto</strong><small>Costos, descuentos y margen.</small></button>
+                    </div>
+                  </section>
+
+                  <section className="system-family">
+                    <h3>Tótems</h3>
+                    <div className="system-grid placeholder-systems">
+                      {[1, 2, 3, 4, 5, 6].map((item) => (
+                        <button className="system-option totem planned" disabled key={item}>
+                          <span>{String(item).padStart(2, "0")}</span>
+                          <strong>Modelo por definir</strong><small>Receta técnica pendiente.</small>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="system-grid shared-flow">
+                      <button className="system-option workflow" disabled><span>10</span><strong>Instalación</strong><small>Maniobras y viáticos.</small></button>
+                      <button className="system-option workflow" disabled><span>11</span><strong>Embalaje y Envío</strong><small>Empaque y transporte.</small></button>
+                      <button className="system-option workflow" disabled><span>12</span><strong>Revisión de Proyecto</strong><small>Costos, descuentos y margen.</small></button>
+                    </div>
+                  </section>
                 </div>
               </section>
             )}
