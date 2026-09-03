@@ -23,6 +23,11 @@ jobs:
           git checkout --force main
           git reset --hard origin/main
 
+      - name: Apply database migrations
+        run: |
+          cd /home/deploy/apps/custom-graphics-cotizador
+          sh scripts/run-migrations.sh
+
       - name: Build and start application
         run: |
           cd /home/deploy/apps/custom-graphics-cotizador
