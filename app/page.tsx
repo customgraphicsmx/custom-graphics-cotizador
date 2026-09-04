@@ -2473,6 +2473,7 @@ export default function Home() {
             {currentStepId === "structure" && (
               <StructureConfigurator
                 lines={lines}
+                materials={structureMaterials}
                 draft={structureDraft}
                 setDraft={setStructureDraft}
                 recipe={structureRecipeData}
@@ -3477,6 +3478,7 @@ function ProcessStage({
 }
 function StructureConfigurator({
   lines,
+  materials,
   draft,
   setDraft,
   recipe,
@@ -3488,6 +3490,7 @@ function StructureConfigurator({
   price,
 }: {
   lines: Line[];
+  materials: MaterialRecord[];
   draft: StructureDraft;
   setDraft: (value: StructureDraft) => void;
   recipe: ReturnType<typeof structureRecipe> | null;
@@ -3502,6 +3505,8 @@ function StructureConfigurator({
     lines.find((line) => line.id === draft.targetLineId) ||
     lines.find((line) => line.productId === "lona") ||
     lines[0];
+  const hardware = materials.filter((item) => item.category === "Ferretería");
+  const adhesives = materials.filter((item) => item.category === "Adhesivos");
   const update = (patch: Partial<StructureDraft>) =>
     setDraft({ ...draft, ...patch });
   return (
@@ -3563,14 +3568,28 @@ function StructureConfigurator({
                   </select>
                 </label>
                 <label>
-                  Perfil sugerido
+                  Marco perimetral
                   <select
                     value={draft.profile || recipe.profile}
                     onChange={(e) => update({ profile: e.target.value })}
                   >
-                    <option>Tubular ½” × ½” cal. 18</option>
-                    <option>Tubular ¾” × ¾” cal. 18</option>
+                    <option>Tubular 2” × 1” cal. 18</option>
                     <option>Tubular 1” × 1” cal. 18</option>
+                    <option>Tubular ¾” × ¾” cal. 18</option>
+                    <option>Tubular ½” × ½” cal. 18</option>
+                  </select>
+                </label>
+                <label>
+                  Perfil de refuerzos
+                  <select
+                    value={draft.reinforcementProfile || recipe.reinforcementProfile}
+                    onChange={(e) => update({ reinforcementProfile: e.target.value })}
+                  >
+                    <option>Tubular 2” × 1” cal. 18</option>
+                    <option>Tubular 1” × 1” cal. 18</option>
+                    <option>Tubular ¾” × ¾” cal. 18</option>
+                    <option>Tubular ½” × ½” cal. 18</option>
+                    <option>Solera 1½ × ⅛</option>
                   </select>
                 </label>
                 <label>
@@ -3615,6 +3634,46 @@ function StructureConfigurator({
                     }
                   />
                 </label>
+                <label>
+                  Pija estructural
+                  <select
+                    value={draft.hardwareId}
+                    onChange={(e) => update({ hardwareId: e.target.value })}
+                  >
+                    <option value="">Sin pijas</option>
+                    {hardware.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}{item.cost ? ` · ${money(item.cost)} c/u` : " · costo pendiente"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Adhesivo estructural
+                  <select
+                    value={draft.adhesiveId}
+                    onChange={(e) => update({ adhesiveId: e.target.value })}
+                  >
+                    <option value="">No requiere</option>
+                    {adhesives.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}{item.cost ? ` · ${money(item.cost)}` : " · costo pendiente"}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {draft.adhesiveId && (
+                  <label>
+                    Cantidad de adhesivo
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={draft.adhesiveQuantity}
+                      onChange={(e) => update({ adhesiveQuantity: Math.max(0, Number(e.target.value)) })}
+                    />
+                  </label>
+                )}
                 <label>
                   Acabado
                   <select
