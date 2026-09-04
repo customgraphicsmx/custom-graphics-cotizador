@@ -178,3 +178,22 @@
   .structure-diagram{padding:34px 34px 28px 24px}
   .diagram-frame{max-width:100%!important}
 }
+
+/* Spacious structural recipe and technical isometric drawing */
+.structure-fields{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px 20px}
+.structure-fields>label:first-child{grid-column:span 2}
+.structure-fields .structure-double-toggle{flex-direction:row;align-items:center;justify-content:flex-start;border:1px solid #c9d9c8;border-radius:9px;min-height:44px;padding:0 12px;background:#f7faf5}
+.structure-double-toggle input{width:17px!important;height:17px!important;accent-color:#557d23}
+.structure-diagram{min-height:0;padding:10px 16px 6px;overflow:visible}
+.structure-3d{display:block;width:min(100%,520px);height:275px;margin:0 auto}
+.structure-3d text{font-size:11px;font-weight:800;fill:#526451}
+.frame-3d rect,.frame-3d line{fill:none;stroke:#173f35;stroke-width:9;stroke-linejoin:round;stroke-linecap:square}
+.frame-3d .single-depth{opacity:.5}
+.reinforcement-3d line{fill:none;stroke:#9bd62b;stroke-width:5;stroke-linejoin:round;filter:drop-shadow(2px 2px 1px rgba(46,77,19,.32))}
+.reinforcement-3d.reinforcement-two-by-one line{stroke-width:8}
+.reinforcement-3d.reinforcement-one line{stroke-width:6}
+.reinforcement-3d.reinforcement-three-quarter line{stroke-width:5}
+.reinforcement-3d.reinforcement-half line{stroke-width:4}
+.reinforcement-3d.reinforcement-solera line{stroke:#d6a844;stroke-width:3}
+@media(max-width:1050px){.structure-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.structure-fields>label:first-child{grid-column:span 2}}
+@media(max-width:650px){.structure-fields{grid-template-columns:1fr}.structure-fields>label:first-child{grid-column:auto}.structure-3d{height:230px}}
