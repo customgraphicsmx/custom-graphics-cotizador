@@ -1550,6 +1550,12 @@ export default function Home() {
               unitPrice: structurePrice,
               price: structurePrice,
               cost: structureCost,
+              structure: {
+                targetLineId: structureDraft.targetLineId,
+                recipe: structureRecipeData,
+                paint: structureDraft.paint,
+                notes: structureDraft.notes,
+              },
             },
           ]
         : []),
@@ -8360,131 +8366,120 @@ function openQuoteDocument(
   record: QuoteRecord,
   type: "quote" | "production" | "invoice",
 ) {
-  const data = JSON.parse(record.payload),
-    items = data.items || [],
+  const data = JSON.parse(record.payload || "{}"),
+    items: any[] = Array.isArray(data.items) ? data.items : [],
     isProduction = type === "production",
-    title =
-      type === "quote"
-        ? "COTIZACIÓN"
-        : type === "production"
-          ? "ORDEN DE PRODUCCIÓN"
-          : "FACTURA",
-    rows = items
-      .map((item: any, i: number) => {
-        const l = item.line,
-          p = l ? products.find((x) => x.id === l.productId) : undefined,
-          quantity =
-            item.quantity ||
-            (l ? (p?.mode === "linear" ? l.linearMeters : l.quantity) : 1),
-          unitPrice =
-            item.unitPrice || (quantity ? item.price / quantity : item.price),
-          details =
-            item.description ||
-            (l ? commercialDescription(l) : "Servicio de diseño gráfico"),
-          production = isProduction
-            ? l
-              ? `<small>Equipo: ${l.productId === "lona" ? "Solvente Flytoo" : l.equipment} · Área: ${(item.area || 0).toFixed(2)} m² · Área cobrable: ${(item.billableArea || 0).toFixed(2)} m²${l.productId === "lona" ? ` · ${l.perimeterFinish} · ${l.grommetPattern} (${automaticGrommets(l)} ojillos)` : ""}</small>`
-              : `<small>Servicio de diseño: una propuesta y dos rondas incluidas.</small>`
-            : "";
-        return `<tr>
-<td>${i + 1}</td>
-<td>
-<strong>${item.product || p?.name || "Producto"}</strong>
-<br>
-<span>${details}</span>${production}</td>${
-          isProduction
-            ? ""
-            : `<td>${quantity} ${item.unit || ""}</td>
-<td>${money(unitPrice || 0)}</td>
-<td>${money(item.price || 0)}</td>`
-        }</tr>`;
+    title = isProduction ? "ORDEN DE PRODUCCIÓN" : type === "invoice" ? "FACTURA" : "COTIZACIÓN",
+    logoUrl = `${window.location.origin}/custom-graphics-logo.png`,
+    escape = (value: unknown) =>
+      String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;"),
+    quantityFor = (item: any, line: Line | undefined, product: Product | undefined) =>
+      item.quantity || (line ? (product?.mode === "linear" ? line.linearMeters : line.quantity) : 1),
+    clientDescription = (item: any) => {
+      const line = item.line as Line | undefined,
+        product = line ? products.find((entry) => entry.id === line.productId) : undefined;
+      if (item.type === "structure") return "Bastidor de herrería fabricado a la medida del proyecto.";
+      if (item.type === "design") return "Preparación y desarrollo gráfico conforme al alcance autorizado.";
+      if (!line || !product) return item.description || "Servicio incluido en el proyecto.";
+      const manual = line.fileDescription?.trim();
+      const use =
+        product.id === "lona"
+          ? "impresión en lona para comunicación visual"
+          : product.id === "micro"
+            ? "gráfico para cristal con visibilidad interior"
+            : product.id === "backlight" || product.id === "traslucido"
+              ? "gráfico para caja de luz"
+              : product.mode === "linear"
+                ? "gráfico en vinil de corte"
+                : "gráfico impreso en vinil";
+      const laminate = line.laminationId ? " con laminado protector" : "";
+      return `${manual ? `${manual}. ` : ""}${use}${laminate}.`;
+    },
+    layoutSvg = (line: Line, product: Product) => {
+      if (product.mode === "linear")
+        return `<div class="process-note"><strong>Corte de vinil</strong><span>Preparar ${escape(line.linearMeters)} m lineales en ancho ${escape((line.cutWidth || product.rollWidth).toFixed(2))} m. Realizar corte y depilado según el archivo aprobado.</span></div>`;
+      const roll = product.rollWidth,
+        normalAcross = Math.max(1, Math.floor(roll / Math.max(0.01, line.width))),
+        normalRows = Math.ceil(line.quantity / normalAcross),
+        normalLength = normalRows * line.height,
+        rotatedAcross = Math.max(1, Math.floor(roll / Math.max(0.01, line.height))),
+        rotatedRows = Math.ceil(line.quantity / rotatedAcross),
+        rotatedLength = rotatedRows * line.width,
+        rotated = rotatedLength < normalLength,
+        across = rotated ? rotatedAcross : normalAcross,
+        rows = rotated ? rotatedRows : normalRows,
+        pieceWidth = rotated ? line.height : line.width,
+        pieceLength = rotated ? line.width : line.height,
+        shown = Math.min(line.quantity, 12),
+        blocks = Array.from({ length: shown }).map((_, index) => {
+          const col = index % across, row = Math.floor(index / across),
+            w = Math.min(80 / across, 24), h = Math.min(42 / Math.max(1, rows), 18),
+            x = 10 + col * (80 / across), y = 15 + row * (48 / Math.max(1, rows));
+          return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(2, w - 1).toFixed(1)}" height="${Math.max(2, h - 1).toFixed(1)}" rx="1" fill="#dff5b2" stroke="#365d2f"/>`;
+        }).join("");
+      return `<div class="layout"><div><strong>Acomodo sugerido en plotter</strong><span>Rollo ${roll.toFixed(2)} m · ${across} pieza(s) a lo ancho · ${rows} pasada(s) · largo estimado ${(rotated ? rotatedLength : normalLength).toFixed(2)} m${rotated ? " · pieza girada 90°" : ""}</span></div><svg viewBox="0 0 100 80" role="img" aria-label="Acomodo sugerido en rollo"><rect x="8" y="8" width="84" height="62" rx="3" fill="#f7faf4" stroke="#173b29" stroke-width="1.5"/><text x="50" y="77" text-anchor="middle" font-size="5" fill="#526154">Ancho de rollo ${roll.toFixed(2)} m</text>${blocks}</svg><small>Cada bloque representa una pieza de ${pieceWidth.toFixed(2)} × ${pieceLength.toFixed(2)} m. Verificar orientación del archivo antes de imprimir.</small></div>`;
+    },
+    structureSvg = (item: any) => {
+      const structure = item.structure || {}, recipe = structure.recipe || {},
+        target = items.find((entry) => entry.line?.id === structure.targetLineId)?.line,
+        width = Number(target?.width || 1), height = Number(target?.height || 1),
+        horizontal = Number(recipe.horizontalReinforcements || 0),
+        vertical = Number(recipe.verticalReinforcements || 0),
+        hLines = Array.from({ length: horizontal }).map((_, index) => `<line x1="18" y1="${20 + ((index + 1) * 46) / (horizontal + 1)}" x2="82" y2="${20 + ((index + 1) * 46) / (horizontal + 1)}" stroke="#173b29" stroke-width="1"/>`).join(""),
+        vLines = Array.from({ length: vertical }).map((_, index) => `<line x1="${18 + ((index + 1) * 64) / (vertical + 1)}" y1="20" x2="${18 + ((index + 1) * 64) / (vertical + 1)}" y2="66" stroke="#173b29" stroke-width="1"/>`).join("");
+      return `<div class="structure-layout"><div><strong>Diagrama de bastidor</strong><span>${escape(recipe.profile || "Perfil por definir")} · ${horizontal} refuerzo(s) horizontal(es) · ${vertical} vertical(es)</span></div><svg viewBox="0 0 100 82" role="img" aria-label="Diagrama de estructura"><rect x="18" y="20" width="64" height="46" fill="none" stroke="#173b29" stroke-width="2"/>${hLines}${vLines}<text x="50" y="15" text-anchor="middle" font-size="5">${width.toFixed(2)} m</text><text x="12" y="45" text-anchor="middle" font-size="5" transform="rotate(-90 12 45)">${height.toFixed(2)} m</text></svg><small>${Number(recipe.bars || 0)} barra(s) de 6 m · ${Number(recipe.requiredMeters || 0).toFixed(2)} m requeridos · ${Number(recipe.pijas || 0)} fijaciones aprox.</small></div>`;
+    },
+    productionBlocks = items
+      .map((item, index) => {
+        const line = item.line as Line | undefined,
+          product = line ? products.find((entry) => entry.id === line.productId) : undefined;
+        if (item.type === "structure") return `<section class="production-block"><h2>${String(index + 1).padStart(2, "0")} · Estructura de herrería</h2><p>${escape(item.description)}</p>${structureSvg(item)}</section>`;
+        if (!line || !product) return `<section class="production-block"><h2>${String(index + 1).padStart(2, "0")} · ${escape(item.product || "Servicio")}</h2><p>${escape(item.description || "")}</p></section>`;
+        const result = calc(line),
+          laminate = line.laminationId ? products.find((entry) => entry.id === line.laminationId) : undefined,
+          finish = [
+            line.trim ? "Refile perimetral" : "",
+            line.shapeCut ? "Corte a forma" : "",
+            laminate ? `Laminado: ${laminate.name}` : "",
+          ].filter(Boolean).join(" · "),
+          inputs = [
+            `<li><strong>Sustrato:</strong> ${escape(product.name)} · ${result.bill.toFixed(2)} m² facturables</li>`,
+            `<li><strong>Impresión:</strong> ${escape(line.productId === "lona" ? "Solvente Flytoo" : line.equipment)} · ${result.bill.toFixed(2)} m²</li>`,
+            laminate ? `<li><strong>Laminado:</strong> ${escape(laminate.name)} · ${result.bill.toFixed(2)} m² · auxiliar ${result.laminationHours.toFixed(2)} h</li>` : "",
+            finish ? `<li><strong>Procesos:</strong> ${escape(finish)}</li>` : "",
+          ].join("");
+        return `<section class="production-block"><h2>${String(index + 1).padStart(2, "0")} · ${escape(product.name)}</h2><p>${escape(line.fileDescription || "Sin descripción adicional.")}</p><div class="production-meta"><span>${escape(line.width)} × ${escape(line.height)} m</span><span>${escape(line.quantity)} pieza(s)</span><span>Área neta ${result.net.toFixed(2)} m²</span><span>Merma estimada ${result.waste.toFixed(2)} m²</span></div><div class="production-grid"><div><h3>Insumos y proceso</h3><ul>${inputs}</ul></div>${layoutSvg(line, product)}</div></section>`;
       })
-      .join("");
-  const displayTitle = title.charAt(0) + title.slice(1).toLowerCase();
-  const discount =
-      data.discountPercent > 0
-        ? `<div>
-<span>Precio de lista</span>
-<strong>${money(data.grossSubtotal || record.subtotal)}</strong>
-</div>
-<div>
-<span>Descuento ${data.discountPercent}%</span>
-<strong>− ${money(data.discountAmount || 0)}</strong>
-</div>`
-        : "",
-    totals = isProduction
-      ? ""
-      : `<section class="totals">${discount}<div>
-<span>Subtotal</span>
-<strong>${money(record.subtotal)}</strong>
-</div>
-<div>
-<span>IVA 16%</span>
-<strong>${money(record.tax)}</strong>
-</div>
-<div class="grand">
-<span>Total</span>
-<strong>${money(record.total)}</strong>
-</div>
-</section>`;
-  const invoiceNote =
-    type === "invoice"
-      ? `<p class="legal">Documento administrativo. La factura fiscal CFDI deberá emitirse mediante el sistema de facturación autorizado.</p>`
-      : "";
-  const tableHead = isProduction
-    ? `<tr>
-<th>#</th>
-<th>Especificaciones de producción</th>
-</tr>`
-    : `<tr>
-<th>#</th>
-<th>Descripción del proyecto</th>
-<th>Cant.</th>
-<th>Tarifa</th>
-<th>Cantidad</th>
-</tr>`;
-  const logoUrl = `${window.location.origin}/custom-graphics-logo.png`;
-  const html = `<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>${title} ${record.folio}</title>
-<style>${LETTER_DOCUMENT_CSS}.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:0}.brand-logo{width:235px;height:auto}.doc{text-align:right}.doc h1{font-size:32px;font-weight:400;margin:0 0 2px}.doc strong{display:block;font-size:11px}.doc span{display:block;margin-top:22px}.meta{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:18px;margin:0 0 20px;align-items:end}.meta div{padding:0}.meta small{display:block;color:#555;margin-bottom:2px;text-transform:uppercase}.meta div:not(:first-child){text-align:right}th{background:#baff00;color:#111;text-align:left;padding:8px 10px;font-weight:500}td{padding:10px;vertical-align:top;border-bottom:0}td:first-child{width:34px}td:last-child{text-align:right;width:110px}td span,td small{color:#555;line-height:1.5}.totals{width:300px;margin:28px 0 0 auto;border-top:1px solid #aaa}.totals div{display:flex;justify-content:space-between;padding:8px 12px}.totals .grand{border:0;margin-top:3px;padding:12px;background:#f1f1f1;font-size:14px}.totals .grand strong{color:#111}.notes{margin-top:28px;padding-top:12px;color:#555}.legal{margin-top:25px;font-size:9px;color:#777}.footer{position:fixed;padding-top:5px;font-size:8px;display:flex;justify-content:space-between}</style>
-</head>
-<body>
-<header class="top">
-<img class="brand-logo" src="${logoUrl}" alt="Custom Graphics"/>
-<div class="doc">
-<h1>${displayTitle}</h1>
-<strong>${record.folio}</strong>
-<span>${new Date(record.updated_at).toLocaleDateString("es-MX")}</span>
-</div>
-</header>
-${DOCUMENT_COMPANY_INFO}
-<section class="meta">
-<div>
-<small>Atención a</small>
-<strong>${record.customer_name}</strong>
-</div>
-<div>
-<small>Vendedor</small>
-<strong>${record.seller}</strong>
-</div>
-<div>
-<small>Estado</small>
-<strong>${record.status}</strong>
-</div>
-</section>
-<table class="${isProduction ? "production-document-table" : "sales-document-table"}">
-<thead>${tableHead}</thead>
-<tbody>${rows}</tbody>
-</table>${totals}${type === "quote" ? '<div class="notes"><strong>Condiciones comerciales</strong><p>Precios en MXN. Vigencia de 15 días. Producción sujeta a confirmación de anticipo y archivos.</p></div>' : ""}${invoiceNote}<footer class="footer">
-<span>Custom Graphics</span>
-<span>${isProduction ? "Documento interno - sin precios" : "Documento generado desde el sistema de cotización"}</span>
-</footer>
-<script>setTimeout(()=>window.print(),350)<\/script>
-</body>
-</html>`;
+      .join(""),
+    quoteRows = items
+      .map((item, index) => {
+        const line = item.line as Line | undefined,
+          product = line ? products.find((entry) => entry.id === line.productId) : undefined,
+          quantity = quantityFor(item, line, product),
+          unitPrice = item.unitPrice || (quantity ? item.price / quantity : item.price);
+        return `<tr><td>${index + 1}</td><td><strong>${escape(item.product || product?.name || "Proyecto")}</strong><br><span>${escape(clientDescription(item))}</span></td><td>${escape(quantity)} ${escape(item.unit || "")}</td><td>${money(unitPrice || 0)}</td><td>${money(item.price || 0)}</td></tr>`;
+      })
+      .join(""),
+    manualSummary = items
+      .map((item) => (item.line?.fileDescription || "").trim())
+      .filter(Boolean)
+      .join(" · "),
+    materialSummary = items
+      .filter((item) => item.line)
+      .map((item) => {
+        const product = products.find((entry) => entry.id === item.line.productId);
+        return product?.name || "";
+      })
+      .filter(Boolean)
+      .join(", "),
+    discount = data.discountPercent > 0 ? `<div><span>Precio de lista</span><strong>${money(data.grossSubtotal || record.subtotal)}</strong></div><div><span>Descuento ${data.discountPercent}%</span><strong>− ${money(data.discountAmount || 0)}</strong></div>` : "",
+    quoteContent = `<section class="project-summary"><h2>Resumen del proyecto</h2><p>${escape(manualSummary || data.projectName || "Proyecto de producción gráfica personalizado.")}</p><small>Incluye: ${escape(materialSummary || "los materiales y procesos seleccionados")}.</small></section><table class="quote-table"><thead><tr><th>#</th><th>Descripción general</th><th>Cant.</th><th>Precio unitario</th><th>Importe</th></tr></thead><tbody>${quoteRows}</tbody></table><section class="totals">${discount}<div><span>Subtotal</span><strong>${money(record.subtotal)}</strong></div><div><span>IVA 16%</span><strong>${money(record.tax)}</strong></div><div class="grand"><span>Total</span><strong>${money(record.total)}</strong></div></section><section class="notes"><strong>Condiciones comerciales</strong><p>Precios en MXN. Vigencia de 15 días. Producción sujeta a confirmación de anticipo y aprobación de archivos.</p></section>`,
+    html = `<!doctype html><html><head><meta charset="utf-8"><title>${title} ${escape(record.folio)}</title><style>${LETTER_DOCUMENT_CSS}
+.top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:0}.brand-logo{width:215px;height:auto}.doc{text-align:right}.doc h1{font-size:25px;margin:0}.doc strong{display:block;margin-top:4px}.doc span{display:block;margin-top:12px}.meta{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:16px;margin:0 0 18px}.meta div{border:1px solid #d9e0da;border-radius:7px;padding:9px}.meta small{display:block;color:#66756a;text-transform:uppercase;font-size:8px}.project-summary{border-left:5px solid #baff00;background:#f5f8f2;padding:13px 16px;margin-bottom:16px}.project-summary h2{font-size:15px;margin:0 0 5px}.project-summary p{margin:0 0 5px}.project-summary small{color:#627064}.quote-table th{background:#0b0d0c;color:#fff;text-align:left;padding:8px}.quote-table td{padding:10px 8px;border-bottom:1px solid #dbe2dc;vertical-align:top}.quote-table td:first-child{width:30px}.quote-table td:nth-child(3){width:13%;white-space:nowrap}.quote-table td:nth-child(4),.quote-table td:nth-child(5){width:15%;text-align:right;white-space:nowrap}.quote-table span{color:#617066;line-height:1.35}.totals{width:290px;margin:20px 0 0 auto;border-top:1px solid #777}.totals div{display:flex;justify-content:space-between;padding:7px}.totals .grand{background:#f1f1f1;font-size:15px;margin-top:4px}.notes{margin-top:25px;border-top:1px solid #d7ded8;padding-top:10px;color:#58665c}.production-title{margin:0 0 16px}.production-title p{color:#536257;margin:4px 0}.production-block{border:1px solid #ced9cf;border-radius:8px;padding:13px;margin:0 0 14px;break-inside:avoid}.production-block h2{font-size:16px;margin:0 0 4px}.production-block>p{margin:0 0 10px;color:#5d6b61}.production-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}.production-meta span{border:1px solid #dae3db;background:#f7faf7;border-radius:5px;padding:5px 7px;font-size:10px}.production-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.production-grid h3{font-size:12px;margin:0 0 7px}.production-grid ul{margin:0;padding-left:17px;color:#445248;font-size:10px;line-height:1.5}.layout,.structure-layout{border:1px solid #c8d8c9;background:#f7faf4;border-radius:7px;padding:9px}.layout>div,.structure-layout>div{display:flex;flex-direction:column;gap:2px;font-size:10px}.layout span,.structure-layout span{color:#617066}.layout svg,.structure-layout svg{width:100%;height:120px;margin:7px 0;background:#fff}.layout small,.structure-layout small,.process-note span{display:block;color:#657268;font-size:9px;line-height:1.35}.process-note{border:1px solid #c8d8c9;background:#f7faf4;border-radius:7px;padding:11px;font-size:10px}.process-note span{margin-top:5px}.footer{position:fixed;bottom:3mm;left:12mm;right:12mm;border-top:1px solid #aaa;padding-top:5px;font-size:8px;display:flex;justify-content:space-between;color:#777}@media print{.production-block{break-inside:avoid}.production-grid{grid-template-columns:1fr 1fr}}</style></head><body><header class="top"><img class="brand-logo" src="${logoUrl}" alt="Custom Graphics"><div class="doc"><h1>${isProduction ? "Orden de producción" : type === "invoice" ? "Factura" : "Cotización"}</h1><strong>${escape(record.folio)}</strong><span>${new Date(record.updated_at).toLocaleDateString("es-MX")}</span></div></header>${DOCUMENT_COMPANY_INFO}<section class="meta"><div><small>Cliente</small><strong>${escape(record.customer_name)}</strong></div><div><small>Vendedor</small><strong>${escape(record.seller)}</strong></div><div><small>Proyecto</small><strong>${escape(data.projectName || "Sin nombre")}</strong></div></section>${isProduction ? `<section class="production-title"><h1>Especificaciones de producción</h1><p>Documento interno · sin precios · validar medidas y archivo antes de iniciar.</p></section>${productionBlocks}` : quoteContent}<footer class="footer"><span>Custom Graphics</span><span>${isProduction ? "Documento interno de producción" : "Documento comercial"}</span></footer><script>setTimeout(()=>window.print(),350)<\\/script></body></html>`;
   const popup = window.open("", "_blank");
   if (popup) {
     popup.document.write(html);
