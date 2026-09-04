@@ -127,6 +127,8 @@ type StructureDraft = {
   hardwareId: string;
   adhesiveId: string;
   adhesiveQuantity: number;
+  doubleStructure: boolean;
+  depth: number;
   horizontalReinforcements: number;
   verticalReinforcements: number;
   paint: boolean;
@@ -784,6 +786,8 @@ function structureRecipe(
   horizontalOverride: number = -1,
   verticalOverride: number = -1,
   reinforcementProfileOverride: string = "",
+  doubleStructure: boolean = false,
+  depth: number = 0,
 ) {
   const longest = Math.max(width, height),
     area = width * height;
@@ -800,17 +804,23 @@ function structureRecipe(
     verticalReinforcements =
       verticalOverride >= 0 ? verticalOverride : suggested;
   const perimeter = 2 * (width + height),
-    frameCutMeters = perimeter * quantity,
+    faces = doubleStructure ? 2 : 1,
+    frameCutMeters = perimeter * quantity * faces,
     reinforcementCutMeters =
       (horizontalReinforcements * width + verticalReinforcements * height) *
-      quantity,
-    cutMeters = frameCutMeters + reinforcementCutMeters,
+      quantity *
+      faces,
+    connectorCutMeters = doubleStructure ? Math.max(0, depth) * 4 * quantity : 0,
+    cutMeters = frameCutMeters + reinforcementCutMeters + connectorCutMeters,
     frameRequiredMeters = frameCutMeters * 1.1,
     reinforcementRequiredMeters = reinforcementCutMeters * 1.1,
-    requiredMeters = frameRequiredMeters + reinforcementRequiredMeters,
+    connectorRequiredMeters = connectorCutMeters * 1.1,
+    requiredMeters =
+      frameRequiredMeters + reinforcementRequiredMeters + connectorRequiredMeters,
     frameBars = Math.ceil(frameRequiredMeters / 6),
     reinforcementBars = Math.ceil(reinforcementRequiredMeters / 6),
-    bars = frameBars + reinforcementBars,
+    connectorBars = Math.ceil(connectorRequiredMeters / 6),
+    bars = frameBars + reinforcementBars + connectorBars,
     pijas =
       Math.ceil(perimeter / 0.3) * quantity +
       Math.ceil(perimeter / 0.3) * quantity * 0.1,
@@ -828,6 +838,11 @@ function structureRecipe(
     reinforcementRequiredMeters,
     frameBars,
     reinforcementBars,
+    connectorCutMeters,
+    connectorRequiredMeters,
+    connectorBars,
+    faces,
+    depth,
     horizontalReinforcements,
     verticalReinforcements,
     perimeter,
@@ -954,6 +969,8 @@ export default function Home() {
     hardwareId: "FERR01",
     adhesiveId: "",
     adhesiveQuantity: 0,
+    doubleStructure: false,
+    depth: 0.3,
     horizontalReinforcements: -1,
     verticalReinforcements: -1,
     paint: true,
