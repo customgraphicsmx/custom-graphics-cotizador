@@ -821,6 +821,32 @@ function structureRecipe(
     laborHours,
   };
 }
+function structureProfileKey(profile: string) {
+  const value = profile.toLowerCase().replace(/\s/g, "");
+  if (/½|1\/2|0\.5/.test(value)) return "half";
+  if (/¾|3\/4|0\.75/.test(value)) return "three-quarter";
+  return "one";
+}
+
+function structureProfileMaterial(
+  materials: MaterialRecord[],
+  profile: string,
+) {
+  const tubulars = materials.filter(
+    (item) =>
+      item.category.toLowerCase().includes("herrer") &&
+      item.name.toLowerCase().includes("tubular"),
+  );
+  const sizePattern: Record<string, RegExp> = {
+    half: /(½|1\s*\/\s*2|0\.5)\D*(½|1\s*\/\s*2|0\.5)/i,
+    "three-quarter": /(¾|3\s*\/\s*4|0\.75)\D*(¾|3\s*\/\s*4|0\.75)/i,
+    one: /(^|\D)1\s*[”"]?\s*[×x]\s*1\s*[”"]?(\D|$)/i,
+  };
+  return tubulars.find((item) =>
+    sizePattern[structureProfileKey(profile)].test(item.name),
+  );
+}
+
 function technicalDescription(l: Line) {
   const p = products.find((x) => x.id === l.productId)!;
   if (p.mode === "linear")
@@ -1012,20 +1038,7 @@ export default function Home() {
         structureDraft.horizontalReinforcements,
         structureDraft.verticalReinforcements,
       ),
-      material =
-        structureMaterials.find((item) =>
-          item.name.toLowerCase().includes(
-            recipe.profile
-              .replace(/[^0-9½¾x]/g, "")
-              .toLowerCase()
-              .slice(0, 5),
-          ),
-        ) ||
-        structureMaterials.find(
-          (item) =>
-            item.category.startsWith("Herrería") &&
-            item.name.toLowerCase().includes("tubular"),
-        ),
+      material = structureProfileMaterial(structureMaterials, recipe.profile),
       barCost = material ? material.purchase_cost || material.cost : 0,
       consumables =
         recipe.cutMeters * 14 +
@@ -1321,20 +1334,10 @@ export default function Home() {
           structureDraft.verticalReinforcements,
         )
       : null,
-    profileMaterial =
-      structureMaterials.find((item) =>
-        item.name.toLowerCase().includes(
-          (structureRecipeData?.profile || "")
-            .replace(/[^0-9½¾x]/g, "")
-            .toLowerCase()
-            .slice(0, 5),
-        ),
-      ) ||
-      structureMaterials.find(
-        (item) =>
-          item.category.startsWith("Herrería") &&
-          item.name.toLowerCase().includes("tubular"),
-      ),
+    profileMaterial = structureProfileMaterial(
+      structureMaterials,
+      structureRecipeData?.profile || "",
+    ),
     profileBarCost = profileMaterial
       ? profileMaterial.purchase_cost || profileMaterial.cost
       : 0,
