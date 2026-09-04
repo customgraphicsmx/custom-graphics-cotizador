@@ -8050,6 +8050,14 @@ function RecordModal({
     </div>
   );
 }
+function quoteProjectName(record: QuoteRecord) {
+  try {
+    return JSON.parse(record.payload || "{}")?.projectName?.trim() || "Sin nombre";
+  } catch {
+    return "Sin nombre";
+  }
+}
+
 function CommercialTable({
   records,
   salesOnly,
@@ -8067,7 +8075,7 @@ function CommercialTable({
   const [convertingId, setConvertingId] = useState("");
   const [conversionError, setConversionError] = useState("");
   const filtered = records.filter((r) =>
-    `${r.folio} ${r.customer_name} ${r.seller}`
+    `${r.folio} ${r.customer_name} ${r.seller} ${quoteProjectName(r)}`
       .toLowerCase()
       .includes(search.toLowerCase()),
   );
@@ -8120,7 +8128,7 @@ function CommercialTable({
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar cliente, folio o vendedor"
+          placeholder="Buscar cliente, proyecto, folio o vendedor"
         />
         <span>{filtered.length} registros</span>
       </div>
@@ -8129,6 +8137,7 @@ function CommercialTable({
           <span>Fecha</span>
           <span>Folio</span>
           <span>Cliente</span>
+          <span>Proyecto</span>
           <span>Vendedor</span>
           <span>Estado</span>
           <span>Total</span>
@@ -8139,6 +8148,7 @@ function CommercialTable({
             <span>{new Date(r.updated_at).toLocaleDateString("es-MX")}</span>
             <strong>{r.folio}</strong>
             <span>{r.customer_name}</span>
+            <span className="project-cell">{quoteProjectName(r)}</span>
             <span>{r.seller}</span>
             <em className={`status-pill ${r.status.toLowerCase()}`}>
               {r.status}
@@ -8146,23 +8156,19 @@ function CommercialTable({
             <strong>{money(r.total)}</strong>
             <div className="compact-actions">
               <button onClick={() => onEdit(r)}>Editar</button>
-              <button onClick={() => openQuoteDocument(r, "quote")}>PDF</button>
-              {salesOnly ? (
-                <button onClick={() => openQuoteDocument(r, "production")}>
-                  Producción
+              <button onClick={() => openQuoteDocument(r, "quote")}>Cotización PDF</button>
+              <button onClick={() => openQuoteDocument(r, "production")}>Producción PDF</button>
+              <button onClick={() => openQuoteDocument(r, "purchase")}>Compra PDF</button>
+              {!salesOnly && r.status !== "Venta" && (
+                <button
+                  className="sale-action"
+                  disabled={convertingId === r.id}
+                  onClick={() => convertToSale(r.id)}
+                >
+                  {convertingId === r.id
+                    ? "Generando órdenes..."
+                    : "Convertir a venta"}
                 </button>
-              ) : (
-                r.status !== "Venta" && (
-                  <button
-                    className="sale-action"
-                    disabled={convertingId === r.id}
-                    onClick={() => convertToSale(r.id)}
-                  >
-                    {convertingId === r.id
-                      ? "Generando órdenes..."
-                      : "Convertir a venta"}
-                  </button>
-                )
               )}
             </div>
           </div>
@@ -8367,12 +8373,13 @@ function openPurchaseOrderDocument(record: PurchaseOrderRecord) {
 }
 function openQuoteDocument(
   record: QuoteRecord,
-  type: "quote" | "production" | "invoice",
+  type: "quote" | "production" | "purchase" | "invoice",
 ) {
   const data = JSON.parse(record.payload || "{}"),
     items: any[] = Array.isArray(data.items) ? data.items : [],
     isProduction = type === "production",
-    title = isProduction ? "ORDEN DE PRODUCCIÓN" : type === "invoice" ? "FACTURA" : "COTIZACIÓN",
+    isPurchase = type === "purchase",
+    title = isProduction ? "ORDEN DE PRODUCCIÓN" : isPurchase ? "ORDEN DE COMPRA" : type === "invoice" ? "FACTURA" : "COTIZACIÓN",
     logoUrl = `${window.location.origin}/custom-graphics-logo.png`,
     escape = (value: unknown) =>
       String(value ?? "")
