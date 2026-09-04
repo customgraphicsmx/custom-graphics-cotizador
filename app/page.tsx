@@ -2516,6 +2516,7 @@ export default function Home() {
                 setDraft={setStructureDraft}
                 recipe={structureRecipeData}
                 barCost={profileBarCost}
+                reinforcementBarCost={reinforcementBarCost}
                 consumables={structureFabricationConsumables}
                 paintCost={structurePaintCost}
                 laborCost={structureLaborCost}
@@ -3521,6 +3522,7 @@ function StructureConfigurator({
   setDraft,
   recipe,
   barCost,
+  reinforcementBarCost,
   consumables,
   paintCost,
   laborCost,
@@ -3533,6 +3535,7 @@ function StructureConfigurator({
   setDraft: (value: StructureDraft) => void;
   recipe: ReturnType<typeof structureRecipe> | null;
   barCost: number;
+  reinforcementBarCost: number;
   consumables: number;
   paintCost: number;
   laborCost: number;
@@ -3780,30 +3783,38 @@ function StructureConfigurator({
                   </small>
                 </div>
                 <div className="structure-specs">
-                  <strong>{recipe.profile}</strong>
+                  <strong>Marco: {recipe.profile}</strong>
+                  <span>Refuerzos: {recipe.reinforcementProfile}</span>
                   <span>
                     {recipe.horizontalReinforcements} horizontal(es) ·{" "}
                     {recipe.verticalReinforcements} vertical(es)
                   </span>
                   <span>
-                    {recipe.bars} barra(s) de 6 m ·{" "}
-                    {recipe.requiredMeters.toFixed(2)} m con merma
+                    Marco: {recipe.frameBars} barra(s) · Refuerzos:{" "}
+                    {recipe.reinforcementBars} barra(s) de 6 m
                   </span>
-                  <span>{recipe.pijas} pijabrocas con rondana, aprox.</span>
+                  <span>{recipe.pijas} fijaciones, aprox. · {draft.adhesiveId ? `${draft.adhesiveQuantity} adhesivo(s)` : "sin adhesivo"}</span>
                 </div>
               </div>
               <div className="structure-costs">
                 <div>
-                  <span>Perfil</span>
-                  <strong>{money(recipe.bars * barCost)}</strong>
+                  <span>Marco perimetral</span>
+                  <strong>{money(recipe.frameBars * barCost)}</strong>
                   <small>
-                    {recipe.bars} barras × {money(barCost)}
+                    {recipe.frameBars} barras × {money(barCost)}
+                  </small>
+                </div>
+                <div>
+                  <span>Refuerzos internos</span>
+                  <strong>{money(recipe.reinforcementBars * reinforcementBarCost)}</strong>
+                  <small>
+                    {recipe.reinforcementBars} barras × {money(reinforcementBarCost)}
                   </small>
                 </div>
                 <div>
                   <span>Insumos de fabricación</span>
                   <strong>{money(consumables)}</strong>
-                  <small>Soldadura, discos y pijabrocas</small>
+                  <small>Soldadura, pijas y adhesivos seleccionados</small>
                 </div>
                 <div>
                   <span>Pintura y anticorrosivo</span>
