@@ -4098,7 +4098,19 @@ function QuotePreviewPanel({
                 className="ghost"
                 onClick={() => openQuoteDocument(record, "quote")}
               >
-                Descargar / imprimir PDF
+                Cotización PDF
+              </button>
+              <button
+                className="ghost"
+                onClick={() => openQuoteDocument(record, "production")}
+              >
+                Producción PDF
+              </button>
+              <button
+                className="ghost"
+                onClick={() => openQuoteDocument(record, "purchase")}
+              >
+                Compra PDF
               </button>
               {record.status !== "Enviada" && (
                 <button className="primary" onClick={markSent}>
