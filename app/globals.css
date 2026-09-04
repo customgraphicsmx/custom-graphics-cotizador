@@ -131,3 +131,50 @@
 
 
 .design-service-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;padding:18px 20px;border-bottom:1px solid #dbe4dc}.design-service-card{min-height:150px;text-align:left;border:1px solid #cbd8cc;border-radius:11px;background:#fff;padding:13px;cursor:pointer;display:flex;flex-direction:column;gap:6px;color:#1c2d23}.design-service-card:hover{border-color:#91b457;background:#fbfef7}.design-service-card.selected{border:2px solid #9bd300;background:#effbd2;box-shadow:inset 0 0 0 1px #d8ed97}.design-service-card small{font-size:10px;font-weight:800;letter-spacing:.08em;color:#69796d}.design-service-card strong{font-size:14px;line-height:1.18}.design-service-card span{font-size:12px;line-height:1.3;color:#66756a}.design-service-card em{margin-top:auto;font-style:normal;font-weight:800;font-size:12px;color:#245335}.design-brief{padding:18px 20px;background:#fbfdf8}.design-brief-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:15px}.design-brief-head h4{margin:3px 0;font-size:17px}.design-brief-head label{min-width:190px;font-weight:800}.design-brief-head input{width:100%;height:42px;margin-top:6px;border:1px solid #c7d2c9;border-radius:8px;padding:0 10px;font-weight:800}.design-brief-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.design-brief-grid label{font-size:12px;font-weight:800}.design-brief-grid input,.design-brief-grid textarea{display:block;width:100%;margin-top:6px;border:1px solid #c7d2c9;border-radius:8px;background:#fff;padding:10px;font:inherit}.design-brief-grid input{height:42px}.design-brief-grid textarea{min-height:76px;resize:vertical}.design-brief-wide{grid-column:1/-1}.design-authorization{display:flex;gap:10px;align-items:flex-start;margin-top:15px;padding:13px;border:1px solid #b8d56c;border-radius:9px;background:#f0f9da;font-size:13px;font-weight:800}.design-authorization input{width:17px;height:17px;accent-color:#78ad00}.design-conditions{padding:11px 12px;border:1px solid #d6e1d5;border-radius:9px;background:#fff}.design-conditions strong{display:block;font-size:13px}.design-conditions small{display:block;color:var(--muted);margin-top:6px;font-size:12px;line-height:1.35}@media(max-width:1180px){.design-service-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:680px){.design-service-cards,.design-brief-grid{grid-template-columns:1fr}.design-brief-head{display:block}.design-brief-head label{display:block;margin-top:12px}.design-brief-wide{grid-column:auto}}
+
+/* Structural recipe: flexible controls and proportional isometric view */
+.structure-fields{
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  align-items:end;
+}
+.structure-fields label{min-width:0}
+.structure-fields input,.structure-fields select{min-width:0;width:100%}
+.structure-result{grid-template-columns:minmax(310px,1.05fr) minmax(250px,.95fr)}
+.structure-costs{grid-template-columns:repeat(auto-fit,minmax(175px,1fr))}
+.structure-diagram{min-width:0;overflow:hidden;padding:35px 50px 30px 42px}
+.diagram-frame{
+  box-sizing:border-box;
+  border-color:#123d35;
+  border-style:solid;
+  background:linear-gradient(135deg,#fff 0%,#f0f6ef 100%);
+  box-shadow:7px 7px 0 #9ab8a0,12px 12px 18px rgba(22,49,37,.16);
+  transform:perspective(680px) rotateX(3deg) rotateY(-4deg);
+  transform-origin:center;
+}
+.diagram-frame.frame-two-by-one{border-width:9px}
+.diagram-frame.frame-one{border-width:7px}
+.diagram-frame.frame-three-quarter{border-width:6px}
+.diagram-frame.frame-half{border-width:5px}
+.diagram-frame i{
+  background:#9ad629;
+  box-shadow:2px 2px 0 #537b1f,4px 4px 7px rgba(48,79,20,.18);
+}
+.diagram-frame i.reinforcement-two-by-one{height:8px}
+.diagram-frame i.reinforcement-one{height:6px}
+.diagram-frame i.reinforcement-three-quarter{height:5px}
+.diagram-frame i.reinforcement-half{height:4px}
+.diagram-frame i.reinforcement-solera{height:3px;background:#d9a946;box-shadow:2px 2px 0 #927327}
+.diagram-frame i.vertical.reinforcement-two-by-one{width:8px}
+.diagram-frame i.vertical.reinforcement-one{width:6px}
+.diagram-frame i.vertical.reinforcement-three-quarter{width:5px}
+.diagram-frame i.vertical.reinforcement-half{width:4px}
+.diagram-frame i.vertical.reinforcement-solera{width:3px}
+@media(max-width:1080px){
+  .structure-result{grid-template-columns:1fr}
+  .structure-fields{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+}
+@media(max-width:580px){
+  .structure-fields,.structure-costs{grid-template-columns:1fr}
+  .structure-diagram{padding:34px 34px 28px 24px}
+  .diagram-frame{max-width:100%!important}
+}
