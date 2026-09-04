@@ -123,6 +123,10 @@ type StructureDraft = {
   enabled: boolean;
   targetLineId: number | null;
   profile: string;
+  reinforcementProfile: string;
+  hardwareId: string;
+  adhesiveId: string;
+  adhesiveQuantity: number;
   horizontalReinforcements: number;
   verticalReinforcements: number;
   paint: boolean;
@@ -779,6 +783,7 @@ function structureRecipe(
   profileOverride: string = "",
   horizontalOverride: number = -1,
   verticalOverride: number = -1,
+  reinforcementProfileOverride: string = "",
 ) {
   const longest = Math.max(width, height),
     area = width * height;
@@ -789,18 +794,23 @@ function structureRecipe(
       : area <= 6 && longest <= 3
         ? "Tubular ¾” × ¾” cal. 18"
         : "Tubular 1” × 1” cal. 18");
-  const suggested = Math.max(0, Math.ceil(longest / 1.5) - 1),
+  const reinforcementProfile = reinforcementProfileOverride || profile,
+    suggested = Math.max(0, Math.ceil(longest / 1.5) - 1),
     horizontalReinforcements = horizontalOverride >= 0 ? horizontalOverride : 0,
     verticalReinforcements =
       verticalOverride >= 0 ? verticalOverride : suggested;
   const perimeter = 2 * (width + height),
-    cutMeters =
-      (perimeter +
-        horizontalReinforcements * width +
-        verticalReinforcements * height) *
+    frameCutMeters = perimeter * quantity,
+    reinforcementCutMeters =
+      (horizontalReinforcements * width + verticalReinforcements * height) *
       quantity,
-    requiredMeters = cutMeters * 1.1,
-    bars = Math.ceil(requiredMeters / 6),
+    cutMeters = frameCutMeters + reinforcementCutMeters,
+    frameRequiredMeters = frameCutMeters * 1.1,
+    reinforcementRequiredMeters = reinforcementCutMeters * 1.1,
+    requiredMeters = frameRequiredMeters + reinforcementRequiredMeters,
+    frameBars = Math.ceil(frameRequiredMeters / 6),
+    reinforcementBars = Math.ceil(reinforcementRequiredMeters / 6),
+    bars = frameBars + reinforcementBars,
     pijas =
       Math.ceil(perimeter / 0.3) * quantity +
       Math.ceil(perimeter / 0.3) * quantity * 0.1,
@@ -811,6 +821,13 @@ function structureRecipe(
       Math.max(1, quantity * 0.75);
   return {
     profile,
+    reinforcementProfile,
+    frameCutMeters,
+    reinforcementCutMeters,
+    frameRequiredMeters,
+    reinforcementRequiredMeters,
+    frameBars,
+    reinforcementBars,
     horizontalReinforcements,
     verticalReinforcements,
     perimeter,
@@ -823,6 +840,8 @@ function structureRecipe(
 }
 function structureProfileKey(profile: string) {
   const value = profile.toLowerCase().replace(/\s/g, "");
+  if (/solera/.test(value)) return "solera";
+  if (/2[”"]?[×x]1/.test(value)) return "two-by-one";
   if (/½|1\/2|0\.5/.test(value)) return "half";
   if (/¾|3\/4|0\.75/.test(value)) return "three-quarter";
   return "one";
@@ -838,9 +857,11 @@ function structureProfileMaterial(
       item.name.toLowerCase().includes("tubular"),
   );
   const sizePattern: Record<string, RegExp> = {
+    "two-by-one": /(^|\D)2\s*[”"]?\s*[×x]\s*1\s*[”"]?(\D|$)/i,
     half: /(½|1\s*\/\s*2|0\.5)\D*(½|1\s*\/\s*2|0\.5)/i,
     "three-quarter": /(¾|3\s*\/\s*4|0\.75)\D*(¾|3\s*\/\s*4|0\.75)/i,
     one: /(^|\D)1\s*[”"]?\s*[×x]\s*1\s*[”"]?(\D|$)/i,
+    solera: /solera/i,
   };
   return tubulars.find((item) =>
     sizePattern[structureProfileKey(profile)].test(item.name),
@@ -929,6 +950,10 @@ export default function Home() {
     enabled: false,
     targetLineId: null,
     profile: "",
+    reinforcementProfile: "",
+    hardwareId: "FERR01",
+    adhesiveId: "",
+    adhesiveQuantity: 0,
     horizontalReinforcements: -1,
     verticalReinforcements: -1,
     paint: true,
