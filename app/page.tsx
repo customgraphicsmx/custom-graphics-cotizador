@@ -1062,15 +1062,37 @@ export default function Home() {
         structureDraft.profile,
         structureDraft.horizontalReinforcements,
         structureDraft.verticalReinforcements,
+        structureDraft.reinforcementProfile,
       ),
-      material = structureProfileMaterial(structureMaterials, recipe.profile),
-      barCost = material ? material.purchase_cost || material.cost : 0,
-      consumables =
-        recipe.cutMeters * 14 +
-        recipe.pijas * 2.5 +
-        (structureDraft.paint ? recipe.cutMeters * 9 + 85 : 0),
+      frameMaterial = structureProfileMaterial(structureMaterials, recipe.profile),
+      reinforcementMaterial = structureProfileMaterial(
+        structureMaterials,
+        recipe.reinforcementProfile,
+      ),
+      frameBarCost = frameMaterial
+        ? frameMaterial.purchase_cost || frameMaterial.cost
+        : 0,
+      reinforcementBarCost = reinforcementMaterial
+        ? reinforcementMaterial.purchase_cost || reinforcementMaterial.cost
+        : 0,
+      pijaMaterial = structureMaterials.find(
+        (item) => item.id === structureDraft.hardwareId,
+      ),
+      adhesiveMaterial = structureMaterials.find(
+        (item) => item.id === structureDraft.adhesiveId,
+      ),
+      welding = recipe.cutMeters * 14,
+      hardwareCost = (pijaMaterial?.cost || 0) * recipe.pijas,
+      adhesiveCost =
+        (adhesiveMaterial?.cost || 0) * structureDraft.adhesiveQuantity,
+      paint = structureDraft.paint ? recipe.cutMeters * 9 + 85 : 0,
+      consumables = welding + hardwareCost + adhesiveCost + paint,
       labor = recipe.laborHours * 105,
-      cost = recipe.bars * barCost + consumables + labor;
+      cost =
+        recipe.frameBars * frameBarCost +
+        recipe.reinforcementBars * reinforcementBarCost +
+        consumables +
+        labor;
     return { cost, price: cost / (1 - Math.max(1, margin) / 100) };
   };
   const rigidMaterial = rigidCatalog.find(
@@ -1357,25 +1379,41 @@ export default function Home() {
           structureDraft.profile,
           structureDraft.horizontalReinforcements,
           structureDraft.verticalReinforcements,
+          structureDraft.reinforcementProfile,
         )
       : null,
     profileMaterial = structureProfileMaterial(
       structureMaterials,
       structureRecipeData?.profile || "",
     ),
+    reinforcementMaterial = structureProfileMaterial(
+      structureMaterials,
+      structureRecipeData?.reinforcementProfile || "",
+    ),
     profileBarCost = profileMaterial
       ? profileMaterial.purchase_cost || profileMaterial.cost
       : 0,
+    reinforcementBarCost = reinforcementMaterial
+      ? reinforcementMaterial.purchase_cost || reinforcementMaterial.cost
+      : 0,
+    structurePija = structureMaterials.find(
+      (item) => item.id === structureDraft.hardwareId,
+    ),
+    structureAdhesive = structureMaterials.find(
+      (item) => item.id === structureDraft.adhesiveId,
+    ),
     structureFabricationConsumables =
       (structureRecipeData?.cutMeters || 0) * 14 +
-      (structureRecipeData?.pijas || 0) * 2.5,
+      (structurePija?.cost || 0) * (structureRecipeData?.pijas || 0) +
+      (structureAdhesive?.cost || 0) * structureDraft.adhesiveQuantity,
     structurePaintCost = structureDraft.paint
       ? (structureRecipeData?.cutMeters || 0) * 9 + 85
       : 0,
     structureConsumables = structureFabricationConsumables + structurePaintCost,
     structureLaborCost = (structureRecipeData?.laborHours || 0) * 105,
     structureCost = structureDraft.enabled
-      ? (structureRecipeData?.bars || 0) * profileBarCost +
+      ? (structureRecipeData?.frameBars || 0) * profileBarCost +
+        (structureRecipeData?.reinforcementBars || 0) * reinforcementBarCost +
         structureConsumables +
         structureLaborCost
       : 0,
