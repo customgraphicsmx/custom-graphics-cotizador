@@ -373,7 +373,7 @@ const products: Product[] = [
   },
   {
     id: "esmerilado",
-    name: "Vinil Esmerilado",
+    name: "Vinil Esmerilado Impreso",
     mode: "area",
     substrate: 84,
     rollWidth: 1.2,
@@ -446,7 +446,7 @@ const productGuidance: Record<string, string> = {
   "arlon-dpf510": "Vinil blanco premium para exteriores y aplicaciones de mayor duración.",
   "arlon-3510": "Laminado transparente premium mate para proteger impresiones Arlon.",
   electrostatico: "Aplicaciones temporales en cristal sin adhesivo permanente.",
-  esmerilado: "Privacidad y decoración en cristal con acabado tipo arenado.",
+  esmerilado: "Gráficos impresos para cristal con efecto esmerilado y privacidad.",
   backlight: "Gráficos retroiluminados para cajas de luz y anuncios luminosos.",
   traslucido: "Vinil blanco para cajas de luz; pendiente de cargar costo.",
   recorte: "Letras, logotipos y gráficos a color cortados en plotter.",
