@@ -3571,6 +3571,13 @@ function StructureConfigurator({
     lines[0];
   const hardware = materials.filter((item) => item.category === "Ferretería");
   const adhesives = materials.filter((item) => item.category === "Adhesivos");
+  const aspect = Math.max(
+    0.18,
+    Math.min(3.5, (selected?.width || 1) / Math.max(0.01, selected?.height || 1)),
+  );
+  const diagramWidth = aspect >= 1 ? 180 : 180 * aspect;
+  const diagramHeight = aspect >= 1 ? 180 / aspect : 180;
+  const frontX = 45, frontY = 50, backX = frontX + 70, backY = frontY - 33;
   const update = (patch: Partial<StructureDraft>) =>
     setDraft({ ...draft, ...patch });
   return (
@@ -3789,37 +3796,37 @@ function StructureConfigurator({
                     className="structure-3d"
                     viewBox="0 0 360 250"
                     role="img"
-                    aria-label="Vista isométrica de estructura"
+                    aria-label="Vista isométrica proporcional de estructura"
                   >
                     <g className={`frame-3d frame-${structureProfileKey(recipe.profile)}`}>
-                      <rect x="45" y="60" width="175" height="130" />
+                      <rect x={frontX} y={frontY} width={diagramWidth} height={diagramHeight} />
                       <rect
                         className={draft.doubleStructure ? "" : "single-depth"}
-                        x="115"
-                        y="27"
-                        width="175"
-                        height="130"
+                        x={backX}
+                        y={backY}
+                        width={diagramWidth}
+                        height={diagramHeight}
                       />
-                      <line x1="45" y1="60" x2="115" y2="27" />
-                      <line x1="220" y1="60" x2="290" y2="27" />
-                      <line x1="45" y1="190" x2="115" y2="157" />
-                      <line x1="220" y1="190" x2="290" y2="157" />
+                      <line x1={frontX} y1={frontY} x2={backX} y2={backY} />
+                      <line x1={frontX + diagramWidth} y1={frontY} x2={backX + diagramWidth} y2={backY} />
+                      <line x1={frontX} y1={frontY + diagramHeight} x2={backX} y2={backY + diagramHeight} />
+                      <line x1={frontX + diagramWidth} y1={frontY + diagramHeight} x2={backX + diagramWidth} y2={backY + diagramHeight} />
                     </g>
                     <g className={`reinforcement-3d reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}>
                       {Array.from({ length: recipe.horizontalReinforcements }).map((_, i) => {
-                        const y = 60 + ((i + 1) * 130) / (recipe.horizontalReinforcements + 1);
-                        const backY = 27 + ((i + 1) * 130) / (recipe.horizontalReinforcements + 1);
-                        return <g key={`h-${i}`}><line x1="45" y1={y} x2="220" y2={y} /><line x1="115" y1={backY} x2="290" y2={backY} /></g>;
+                        const y = frontY + ((i + 1) * diagramHeight) / (recipe.horizontalReinforcements + 1);
+                        const rearY = backY + ((i + 1) * diagramHeight) / (recipe.horizontalReinforcements + 1);
+                        return <g key={`h-${i}`}><line x1={frontX} y1={y} x2={frontX + diagramWidth} y2={y} /><line x1={backX} y1={rearY} x2={backX + diagramWidth} y2={rearY} /></g>;
                       })}
                       {Array.from({ length: recipe.verticalReinforcements }).map((_, i) => {
-                        const x = 45 + ((i + 1) * 175) / (recipe.verticalReinforcements + 1);
-                        const backX = 115 + ((i + 1) * 175) / (recipe.verticalReinforcements + 1);
-                        return <g key={`v-${i}`}><line x1={x} y1="60" x2={x} y2="190" /><line x1={backX} y1="27" x2={backX} y2="157" /><line x1={x} y1="60" x2={backX} y2="27" /></g>;
+                        const x = frontX + ((i + 1) * diagramWidth) / (recipe.verticalReinforcements + 1);
+                        const rearX = backX + ((i + 1) * diagramWidth) / (recipe.verticalReinforcements + 1);
+                        return <g key={`v-${i}`}><line x1={x} y1={frontY} x2={x} y2={frontY + diagramHeight} /><line x1={rearX} y1={backY} x2={rearX} y2={backY + diagramHeight} /><line x1={x} y1={frontY} x2={rearX} y2={backY} /></g>;
                       })}
                     </g>
-                    <text x="132" y="213">{selected?.width.toFixed(2)} m</text>
-                    <text x="22" y="132" transform="rotate(-90 22 132)">{selected?.height.toFixed(2)} m</text>
-                    {draft.doubleStructure && <text x="271" y="190">Fondo a {draft.depth.toFixed(2)} m</text>}
+                    <text x={frontX + diagramWidth / 2} y={frontY + diagramHeight + 22}>{selected?.width.toFixed(2)} m</text>
+                    <text x={frontX - 20} y={frontY + diagramHeight / 2} transform={`rotate(-90 ${frontX - 20} ${frontY + diagramHeight / 2})`}>{selected?.height.toFixed(2)} m</text>
+                    {draft.doubleStructure && <text x={backX + diagramWidth + 8} y={backY + diagramHeight + 18}>Fondo {draft.depth.toFixed(2)} m</text>}
                   </svg>
                   <small>
                     {draft.doubleStructure ? "Estructura doble: frente, fondo y conectores de profundidad." : "Vista isométrica del bastidor con profundidad visual."} Marco oscuro · refuerzos verdes.
