@@ -3577,7 +3577,11 @@ function StructureConfigurator({
   );
   const diagramWidth = aspect >= 1 ? 180 : 180 * aspect;
   const diagramHeight = aspect >= 1 ? 180 / aspect : 180;
-  const frontX = 45, frontY = 50, backX = frontX + 70, backY = frontY - 33;
+  const frontX = 52, frontY = 76;
+  const depthPx = draft.doubleStructure
+    ? Math.max(44, Math.min(92, (draft.depth || 0.3) * 180))
+    : 16;
+  const backX = frontX + depthPx, backY = frontY - depthPx * 0.5;
   const update = (patch: Partial<StructureDraft>) =>
     setDraft({ ...draft, ...patch });
   return (
@@ -3615,198 +3619,145 @@ function StructureConfigurator({
           </div>
           {draft.enabled && recipe && (
             <div className="structure-config">
-              <div className="structure-fields">
-                <label>
-                  Concepto a estructurar
-                  <select
-                    value={selected?.id || ""}
-                    onChange={(e) =>
-                      update({ targetLineId: Number(e.target.value) })
-                    }
-                  >
-                    {lines.map((line, i) => {
-                      const product = products.find(
-                        (p) => p.id === line.productId,
-                      );
-                      return (
-                        <option key={line.id} value={line.id}>
-                          {String(i + 1).padStart(2, "0")} · {product?.name} ·{" "}
-                          {line.width} × {line.height} m · {line.quantity}{" "}
-                          pza(s)
-                        </option>
-                      );
-                    })}
-                  </select>
-                </label>
-                <label>
-                  Marco perimetral
-                  <select
-                    value={draft.profile || recipe.profile}
-                    onChange={(e) => update({ profile: e.target.value })}
-                  >
-                    <option>Tubular 2” × 1” cal. 18</option>
-                    <option>Tubular 1” × 1” cal. 18</option>
-                    <option>Tubular ¾” × ¾” cal. 18</option>
-                    <option>Tubular ½” × ½” cal. 18</option>
-                  </select>
-                </label>
-                <label>
-                  Perfil de refuerzos
-                  <select
-                    value={draft.reinforcementProfile || recipe.reinforcementProfile}
-                    onChange={(e) => update({ reinforcementProfile: e.target.value })}
-                  >
-                    <option>Tubular 2” × 1” cal. 18</option>
-                    <option>Tubular 1” × 1” cal. 18</option>
-                    <option>Tubular ¾” × ¾” cal. 18</option>
-                    <option>Tubular ½” × ½” cal. 18</option>
-                    <option>Solera 1½ × ⅛</option>
-                  </select>
-                </label>
-                <label>
-                  Travesaños horizontales
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={
-                      draft.horizontalReinforcements >= 0
-                        ? draft.horizontalReinforcements
-                        : recipe.horizontalReinforcements
-                    }
-                    onChange={(e) =>
-                      update({
-                        horizontalReinforcements: Math.max(
-                          0,
-                          Math.floor(Number(e.target.value)),
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Travesaños verticales
-                  <input
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={
-                      draft.verticalReinforcements >= 0
-                        ? draft.verticalReinforcements
-                        : recipe.verticalReinforcements
-                    }
-                    onChange={(e) =>
-                      update({
-                        verticalReinforcements: Math.max(
-                          0,
-                          Math.floor(Number(e.target.value)),
-                        ),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  Pija estructural
-                  <select
-                    value={draft.hardwareId}
-                    onChange={(e) => update({ hardwareId: e.target.value })}
-                  >
-                    <option value="">Sin pijas</option>
-                    {hardware.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}{item.cost ? ` · ${money(item.cost)} c/u` : " · costo pendiente"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Adhesivo estructural
-                  <select
-                    value={draft.adhesiveId}
-                    onChange={(e) => update({ adhesiveId: e.target.value })}
-                  >
-                    <option value="">No requiere</option>
-                    {adhesives.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}{item.cost ? ` · ${money(item.cost)}` : " · costo pendiente"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {draft.adhesiveId && (
-                  <label>
-                    Cantidad de adhesivo
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.1"
-                      value={draft.adhesiveQuantity}
-                      onChange={(e) => update({ adhesiveQuantity: Math.max(0, Number(e.target.value)) })}
-                    />
-                  </label>
-                )}
-                <label className="structure-double-toggle">
-                  <input
-                    type="checkbox"
-                    checked={draft.doubleStructure}
-                    onChange={(e) => update({ doubleStructure: e.target.checked })}
-                  />
-                  Estructura doble (frente y fondo)
-                </label>
-                {draft.doubleStructure && (
-                  <label>
-                    Profundidad total (m)
-                    <input
-                      type="number"
-                      min="0.05"
-                      step="0.01"
-                      value={draft.depth}
-                      onChange={(e) => update({ depth: Math.max(0.05, Number(e.target.value)) })}
-                    />
-                  </label>
-                )}
-                <label>
-                  Acabado
-                  <select
-                    value={
-                      draft.paint ? "Pintura anticorrosiva" : "Sin pintura"
-                    }
-                    onChange={(e) =>
-                      update({
-                        paint: e.target.value === "Pintura anticorrosiva",
-                      })
-                    }
-                  >
-                    <option>Pintura anticorrosiva</option>
-                    <option>Sin pintura</option>
-                  </select>
-                </label>
-                <label className="wide">
+              <div className="structure-field-groups">
+                <fieldset className="structure-field-group geometry-group">
+                  <legend>01 · Geometría</legend>
+                  <div className="structure-fields geometry-fields">
+                    <label className="concept-field">
+                      Concepto a estructurar
+                      <select
+                        value={selected?.id || ""}
+                        onChange={(e) => update({ targetLineId: Number(e.target.value) })}
+                      >
+                        {lines.map((line, i) => {
+                          const product = products.find((p) => p.id === line.productId);
+                          return (
+                            <option key={line.id} value={line.id}>
+                              {String(i + 1).padStart(2, "0")} · {product?.name} · {line.width} × {line.height} m · {line.quantity} pza(s)
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </label>
+                    <label className="structure-double-toggle">
+                      <input
+                        type="checkbox"
+                        checked={draft.doubleStructure}
+                        onChange={(e) => update({ doubleStructure: e.target.checked })}
+                      />
+                      <span><strong>Estructura doble</strong><small>Marco frontal, posterior y conexiones de profundidad.</small></span>
+                    </label>
+                    <label className={!draft.doubleStructure ? "depth-disabled" : ""}>
+                      Profundidad total (m)
+                      <input
+                        type="number"
+                        min="0.05"
+                        step="0.01"
+                        disabled={!draft.doubleStructure}
+                        value={draft.doubleStructure ? draft.depth : 0}
+                        onChange={(e) => update({ depth: Math.max(0.05, Number(e.target.value)) })}
+                      />
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="structure-field-group">
+                  <legend>02 · Perfiles y refuerzos</legend>
+                  <div className="structure-fields">
+                    <label>
+                      Marco perimetral
+                      <select value={draft.profile || recipe.profile} onChange={(e) => update({ profile: e.target.value })}>
+                        <option>Tubular 2” × 1” cal. 18</option>
+                        <option>Tubular 1” × 1” cal. 18</option>
+                        <option>Tubular ¾” × ¾” cal. 18</option>
+                        <option>Tubular ½” × ½” cal. 18</option>
+                      </select>
+                    </label>
+                    <label>
+                      Perfil de refuerzos
+                      <select value={draft.reinforcementProfile || recipe.reinforcementProfile} onChange={(e) => update({ reinforcementProfile: e.target.value })}>
+                        <option>Tubular 2” × 1” cal. 18</option>
+                        <option>Tubular 1” × 1” cal. 18</option>
+                        <option>Tubular ¾” × ¾” cal. 18</option>
+                        <option>Tubular ½” × ½” cal. 18</option>
+                        <option>Solera 1½ × ⅛</option>
+                      </select>
+                    </label>
+                    <label>
+                      Travesaños horizontales
+                      <input type="number" min="0" step="1" value={draft.horizontalReinforcements >= 0 ? draft.horizontalReinforcements : recipe.horizontalReinforcements} onChange={(e) => update({ horizontalReinforcements: Math.max(0, Math.floor(Number(e.target.value))) })} />
+                    </label>
+                    <label>
+                      Travesaños verticales
+                      <input type="number" min="0" step="1" value={draft.verticalReinforcements >= 0 ? draft.verticalReinforcements : recipe.verticalReinforcements} onChange={(e) => update({ verticalReinforcements: Math.max(0, Math.floor(Number(e.target.value))) })} />
+                    </label>
+                  </div>
+                </fieldset>
+
+                <fieldset className="structure-field-group">
+                  <legend>03 · Fijación y acabado</legend>
+                  <div className="structure-fields">
+                    <label>
+                      Pija estructural
+                      <select value={draft.hardwareId} onChange={(e) => update({ hardwareId: e.target.value })}>
+                        <option value="">Sin pijas</option>
+                        {hardware.map((item) => <option key={item.id} value={item.id}>{item.name}{item.cost ? ` · ${money(item.cost)} c/u` : " · costo pendiente"}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      Adhesivo estructural
+                      <select value={draft.adhesiveId} onChange={(e) => update({ adhesiveId: e.target.value })}>
+                        <option value="">No requiere</option>
+                        {adhesives.map((item) => <option key={item.id} value={item.id}>{item.name}{item.cost ? ` · ${money(item.cost)}` : " · costo pendiente"}</option>)}
+                      </select>
+                    </label>
+                    <label className={!draft.adhesiveId ? "depth-disabled" : ""}>
+                      Cantidad de adhesivo
+                      <input type="number" min="0" step="0.1" disabled={!draft.adhesiveId} value={draft.adhesiveId ? draft.adhesiveQuantity : 0} onChange={(e) => update({ adhesiveQuantity: Math.max(0, Number(e.target.value)) })} />
+                    </label>
+                    <label>
+                      Acabado
+                      <select value={draft.paint ? "Pintura anticorrosiva" : "Sin pintura"} onChange={(e) => update({ paint: e.target.value === "Pintura anticorrosiva" })}>
+                        <option>Pintura anticorrosiva</option>
+                        <option>Sin pintura</option>
+                      </select>
+                    </label>
+                  </div>
+                </fieldset>
+
+                <label className="structure-notes">
                   Notas de producción
-                  <input
-                    value={draft.notes}
-                    onChange={(e) => update({ notes: e.target.value })}
-                    placeholder="Color, placas, anclajes, condición de muro u observaciones"
-                  />
+                  <input value={draft.notes} onChange={(e) => update({ notes: e.target.value })} placeholder="Color, placas, anclajes, condición de muro u observaciones" />
                 </label>
               </div>
               <div className="structure-result">
                 <div className="structure-diagram">
                   <svg
                     className="structure-3d"
-                    viewBox="0 0 360 250"
+                    viewBox="0 0 440 280"
                     role="img"
-                    aria-label="Vista isométrica proporcional de estructura"
+                    aria-label={draft.doubleStructure ? "Bastidor doble isométrico proporcional" : "Bastidor isométrico proporcional"}
                   >
+                    <g className="structure-shadow">
+                      <path d={`M${frontX + 18} ${frontY + diagramHeight + 20} L${frontX + diagramWidth + depthPx + 35} ${frontY + diagramHeight + 20} L${frontX + diagramWidth + depthPx + 10} ${frontY + diagramHeight + 34} L${frontX + 4} ${frontY + diagramHeight + 34} Z`} />
+                    </g>
+                    {draft.doubleStructure && (
+                      <g className={`frame-3d frame-${structureProfileKey(recipe.profile)} rear-frame`}>
+                        <rect x={backX} y={backY} width={diagramWidth} height={diagramHeight} />
+                      </g>
+                    )}
+                    <g className={`reinforcement-3d reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}>
+                      {draft.doubleStructure && Array.from({ length: recipe.horizontalReinforcements }).map((_, i) => {
+                        const y = backY + ((i + 1) * diagramHeight) / (recipe.horizontalReinforcements + 1);
+                        return <line key={`rear-h-${i}`} x1={backX} y1={y} x2={backX + diagramWidth} y2={y} />;
+                      })}
+                      {draft.doubleStructure && Array.from({ length: recipe.verticalReinforcements }).map((_, i) => {
+                        const x = backX + ((i + 1) * diagramWidth) / (recipe.verticalReinforcements + 1);
+                        return <line key={`rear-v-${i}`} x1={x} y1={backY} x2={x} y2={backY + diagramHeight} />;
+                      })}
+                    </g>
                     <g className={`frame-3d frame-${structureProfileKey(recipe.profile)}`}>
                       <rect x={frontX} y={frontY} width={diagramWidth} height={diagramHeight} />
-                      <rect
-                        className={draft.doubleStructure ? "" : "single-depth"}
-                        x={backX}
-                        y={backY}
-                        width={diagramWidth}
-                        height={diagramHeight}
-                      />
                       <line x1={frontX} y1={frontY} x2={backX} y2={backY} />
                       <line x1={frontX + diagramWidth} y1={frontY} x2={backX + diagramWidth} y2={backY} />
                       <line x1={frontX} y1={frontY + diagramHeight} x2={backX} y2={backY + diagramHeight} />
@@ -3816,17 +3767,17 @@ function StructureConfigurator({
                       {Array.from({ length: recipe.horizontalReinforcements }).map((_, i) => {
                         const y = frontY + ((i + 1) * diagramHeight) / (recipe.horizontalReinforcements + 1);
                         const rearY = backY + ((i + 1) * diagramHeight) / (recipe.horizontalReinforcements + 1);
-                        return <g key={`h-${i}`}><line x1={frontX} y1={y} x2={frontX + diagramWidth} y2={y} /><line x1={backX} y1={rearY} x2={backX + diagramWidth} y2={rearY} /></g>;
+                        return <g key={`h-${i}`}><line x1={frontX} y1={y} x2={frontX + diagramWidth} y2={y} />{draft.doubleStructure && <line x1={frontX} y1={y} x2={backX} y2={rearY} />}</g>;
                       })}
                       {Array.from({ length: recipe.verticalReinforcements }).map((_, i) => {
                         const x = frontX + ((i + 1) * diagramWidth) / (recipe.verticalReinforcements + 1);
                         const rearX = backX + ((i + 1) * diagramWidth) / (recipe.verticalReinforcements + 1);
-                        return <g key={`v-${i}`}><line x1={x} y1={frontY} x2={x} y2={frontY + diagramHeight} /><line x1={rearX} y1={backY} x2={rearX} y2={backY + diagramHeight} /><line x1={x} y1={frontY} x2={rearX} y2={backY} /></g>;
+                        return <g key={`v-${i}`}><line x1={x} y1={frontY} x2={x} y2={frontY + diagramHeight} />{draft.doubleStructure && <line x1={x} y1={frontY} x2={rearX} y2={backY} />}</g>;
                       })}
                     </g>
-                    <text x={frontX + diagramWidth / 2} y={frontY + diagramHeight + 22}>{selected?.width.toFixed(2)} m</text>
-                    <text x={frontX - 20} y={frontY + diagramHeight / 2} transform={`rotate(-90 ${frontX - 20} ${frontY + diagramHeight / 2})`}>{selected?.height.toFixed(2)} m</text>
-                    {draft.doubleStructure && <text x={backX + diagramWidth + 8} y={backY + diagramHeight + 18}>Fondo {draft.depth.toFixed(2)} m</text>}
+                    <text className="dimension-label" x={frontX + diagramWidth / 2} y={frontY + diagramHeight + 56}>{selected?.width.toFixed(2)} m</text>
+                    <text className="dimension-label" x={frontX - 23} y={frontY + diagramHeight / 2} transform={`rotate(-90 ${frontX - 23} ${frontY + diagramHeight / 2})`}>{selected?.height.toFixed(2)} m</text>
+                    {draft.doubleStructure && <text className="depth-label" x={backX + diagramWidth + 7} y={backY + diagramHeight / 2}>Prof. {draft.depth.toFixed(2)} m</text>}
                   </svg>
                   <small>
                     {draft.doubleStructure ? "Estructura doble: frente, fondo y conectores de profundidad." : "Vista isométrica del bastidor con profundidad visual."} Marco oscuro · refuerzos verdes.
@@ -3840,7 +3791,7 @@ function StructureConfigurator({
                     {recipe.verticalReinforcements} vertical(es)
                   </span>
                   <span>
-                    Marco: {recipe.frameBars} barra(s) · Refuerzos:{" "}
+                    Marco: {recipe.frameBars} barra(s){recipe.connectorBars ? ` + ${recipe.connectorBars} conector(es)` : ""} · Refuerzos:{" "}
                     {recipe.reinforcementBars} barra(s) de 6 m
                   </span>
                   <span>{recipe.pijas} fijaciones, aprox. · {draft.adhesiveId ? `${draft.adhesiveQuantity} adhesivo(s)` : "sin adhesivo"}</span>
@@ -3851,7 +3802,7 @@ function StructureConfigurator({
                   <span>Marco perimetral</span>
                   <strong>{money(recipe.frameBars * barCost)}</strong>
                   <small>
-                    {recipe.frameBars} barras × {money(barCost)}
+                    {recipe.frameBars + recipe.connectorBars} barras × {money(barCost)}
                   </small>
                 </div>
                 <div>
