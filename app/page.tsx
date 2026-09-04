@@ -3738,6 +3738,26 @@ function StructureConfigurator({
                     />
                   </label>
                 )}
+                <label className="structure-double-toggle">
+                  <input
+                    type="checkbox"
+                    checked={draft.doubleStructure}
+                    onChange={(e) => update({ doubleStructure: e.target.checked })}
+                  />
+                  Estructura doble (frente y fondo)
+                </label>
+                {draft.doubleStructure && (
+                  <label>
+                    Profundidad total (m)
+                    <input
+                      type="number"
+                      min="0.05"
+                      step="0.01"
+                      value={draft.depth}
+                      onChange={(e) => update({ depth: Math.max(0.05, Number(e.target.value)) })}
+                    />
+                  </label>
+                )}
                 <label>
                   Acabado
                   <select
@@ -3765,44 +3785,44 @@ function StructureConfigurator({
               </div>
               <div className="structure-result">
                 <div className="structure-diagram">
-                  <div className="diagram-measure top">
-                    {selected?.width.toFixed(2)} m
-                  </div>
-                  <div
-                    className={`diagram-frame frame-${structureProfileKey(recipe.profile)}`}
-                    style={{
-                      width: `${((selected?.width || 1) / (selected?.height || 1)) >= 2.48 ? 620 : 250 * ((selected?.width || 1) / (selected?.height || 1))}px`,
-                      height: `${((selected?.width || 1) / (selected?.height || 1)) >= 2.48 ? 620 / ((selected?.width || 1) / (selected?.height || 1)) : 250}px`,
-                    }}
+                  <svg
+                    className="structure-3d"
+                    viewBox="0 0 360 250"
+                    role="img"
+                    aria-label="Vista isométrica de estructura"
                   >
-                    {Array.from({
-                      length: recipe.horizontalReinforcements,
-                    }).map((_, i) => (
-                      <i
-                        className={`horizontal reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}
-                        key={`h-${i}`}
-                        style={{
-                          top: `${((i + 1) / (recipe.horizontalReinforcements + 1)) * 100}%`,
-                        }}
+                    <g className={`frame-3d frame-${structureProfileKey(recipe.profile)}`}>
+                      <rect x="45" y="60" width="175" height="130" />
+                      <rect
+                        className={draft.doubleStructure ? "" : "single-depth"}
+                        x="115"
+                        y="27"
+                        width="175"
+                        height="130"
                       />
-                    ))}
-                    {Array.from({ length: recipe.verticalReinforcements }).map(
-                      (_, i) => (
-                        <i
-                          className={`vertical reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}
-                          key={`v-${i}`}
-                          style={{
-                            left: `${((i + 1) / (recipe.verticalReinforcements + 1)) * 100}%`,
-                          }}
-                        />
-                      ),
-                    )}
-                  </div>
-                  <div className="diagram-measure side">
-                    {selected?.height.toFixed(2)} m
-                  </div>
+                      <line x1="45" y1="60" x2="115" y2="27" />
+                      <line x1="220" y1="60" x2="290" y2="27" />
+                      <line x1="45" y1="190" x2="115" y2="157" />
+                      <line x1="220" y1="190" x2="290" y2="157" />
+                    </g>
+                    <g className={`reinforcement-3d reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}>
+                      {Array.from({ length: recipe.horizontalReinforcements }).map((_, i) => {
+                        const y = 60 + ((i + 1) * 130) / (recipe.horizontalReinforcements + 1);
+                        const backY = 27 + ((i + 1) * 130) / (recipe.horizontalReinforcements + 1);
+                        return <g key={`h-${i}`}><line x1="45" y1={y} x2="220" y2={y} /><line x1="115" y1={backY} x2="290" y2={backY} /></g>;
+                      })}
+                      {Array.from({ length: recipe.verticalReinforcements }).map((_, i) => {
+                        const x = 45 + ((i + 1) * 175) / (recipe.verticalReinforcements + 1);
+                        const backX = 115 + ((i + 1) * 175) / (recipe.verticalReinforcements + 1);
+                        return <g key={`v-${i}`}><line x1={x} y1="60" x2={x} y2="190" /><line x1={backX} y1="27" x2={backX} y2="157" /><line x1={x} y1="60" x2={backX} y2="27" /></g>;
+                      })}
+                    </g>
+                    <text x="132" y="213">{selected?.width.toFixed(2)} m</text>
+                    <text x="22" y="132" transform="rotate(-90 22 132)">{selected?.height.toFixed(2)} m</text>
+                    {draft.doubleStructure && <text x="271" y="190">Fondo a {draft.depth.toFixed(2)} m</text>}
+                  </svg>
                   <small>
-                    Marco en verde oscuro · refuerzos en verde lima · vista isométrica de fabricación
+                    {draft.doubleStructure ? "Estructura doble: frente, fondo y conectores de profundidad." : "Vista isométrica del bastidor con profundidad visual."} Marco oscuro · refuerzos verdes.
                   </small>
                 </div>
                 <div className="structure-specs">
