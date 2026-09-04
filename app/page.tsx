@@ -3746,7 +3746,7 @@ function StructureConfigurator({
                     {selected?.width.toFixed(2)} m
                   </div>
                   <div
-                    className="diagram-frame"
+                    className={`diagram-frame frame-${structureProfileKey(recipe.profile)}`}
                     style={{
                       width: `${((selected?.width || 1) / (selected?.height || 1)) >= 2.48 ? 620 : 250 * ((selected?.width || 1) / (selected?.height || 1))}px`,
                       height: `${((selected?.width || 1) / (selected?.height || 1)) >= 2.48 ? 620 / ((selected?.width || 1) / (selected?.height || 1)) : 250}px`,
@@ -3756,7 +3756,7 @@ function StructureConfigurator({
                       length: recipe.horizontalReinforcements,
                     }).map((_, i) => (
                       <i
-                        className="horizontal"
+                        className={`horizontal reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}
                         key={`h-${i}`}
                         style={{
                           top: `${((i + 1) / (recipe.horizontalReinforcements + 1)) * 100}%`,
@@ -3766,7 +3766,7 @@ function StructureConfigurator({
                     {Array.from({ length: recipe.verticalReinforcements }).map(
                       (_, i) => (
                         <i
-                          className="vertical"
+                          className={`vertical reinforcement-${structureProfileKey(recipe.reinforcementProfile)}`}
                           key={`v-${i}`}
                           style={{
                             left: `${((i + 1) / (recipe.verticalReinforcements + 1)) * 100}%`,
@@ -3779,7 +3779,7 @@ function StructureConfigurator({
                     {selected?.height.toFixed(2)} m
                   </div>
                   <small>
-                    Vista frontal · refuerzos verticales y horizontales
+                    Marco en verde oscuro · refuerzos en verde lima · vista isométrica de fabricación
                   </small>
                 </div>
                 <div className="structure-specs">
