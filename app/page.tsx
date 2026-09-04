@@ -1080,6 +1080,8 @@ export default function Home() {
         structureDraft.horizontalReinforcements,
         structureDraft.verticalReinforcements,
         structureDraft.reinforcementProfile,
+        structureDraft.doubleStructure,
+        structureDraft.depth,
       ),
       frameMaterial = structureProfileMaterial(structureMaterials, recipe.profile),
       reinforcementMaterial = structureProfileMaterial(
@@ -1106,7 +1108,7 @@ export default function Home() {
       consumables = welding + hardwareCost + adhesiveCost + paint,
       labor = recipe.laborHours * 105,
       cost =
-        recipe.frameBars * frameBarCost +
+        (recipe.frameBars + recipe.connectorBars) * frameBarCost +
         recipe.reinforcementBars * reinforcementBarCost +
         consumables +
         labor;
@@ -1397,6 +1399,8 @@ export default function Home() {
           structureDraft.horizontalReinforcements,
           structureDraft.verticalReinforcements,
           structureDraft.reinforcementProfile,
+          structureDraft.doubleStructure,
+          structureDraft.depth,
         )
       : null,
     profileMaterial = structureProfileMaterial(
@@ -1429,7 +1433,9 @@ export default function Home() {
     structureConsumables = structureFabricationConsumables + structurePaintCost,
     structureLaborCost = (structureRecipeData?.laborHours || 0) * 105,
     structureCost = structureDraft.enabled
-      ? (structureRecipeData?.frameBars || 0) * profileBarCost +
+      ? ((structureRecipeData?.frameBars || 0) +
+          (structureRecipeData?.connectorBars || 0)) *
+          profileBarCost +
         (structureRecipeData?.reinforcementBars || 0) * reinforcementBarCost +
         structureConsumables +
         structureLaborCost
