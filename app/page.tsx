@@ -6,6 +6,7 @@ type Equipment = "HP Latex" | "Solvente Flytoo" | "UV";
 type PerimeterFinish = "ACA-01" | "ACA-02" | "ACA-03" | "ACA-05";
 type GrommetPattern = "OJ-00" | "OJ-ESQ" | "OJ-100" | "OJ-050" | "OJ-025";
 type WeedComplexity = "simple" | "media" | "alta";
+type LaminationId = "" | "transparente-mate" | "transparente-brillante" | "arlon-3510";
 type CustomerType =
   "" | "Cliente Maquila" | "Cliente Frecuente" | "Cliente Final";
 type DesignService = "DIS-00" | "DIS-01" | "DIS-02" | "DIS-03" | "DIS-04";
@@ -317,6 +318,7 @@ type Line = {
   cutFreeShippingThreshold: number;
   cutWidth: 0.61 | 1.22;
   weedComplexity: WeedComplexity;
+  laminationId: LaminationId;
 };
 const products: Product[] = [
   {
@@ -409,6 +411,15 @@ const ink: Record<Equipment, number> = {
   "Solvente Flytoo": 34,
   UV: 55,
 };
+const laminationProductIds: LaminationId[] = [
+  "transparente-mate",
+  "transparente-brillante",
+  "arlon-3510",
+];
+const laminatableProductIds = new Set(["mate", "brillante", "arlon-dpf510"]);
+const LAMINATION_ASSISTANT_HOURLY_COST = 90;
+const isLaminatableProduct = (productId: string) =>
+  laminatableProductIds.has(productId);
 const customerMargins: Record<Exclude<CustomerType, "">, number> = {
   "Cliente Maquila": 45,
   "Cliente Frecuente": 55,
@@ -515,6 +526,7 @@ const blank = (id: number): Line => ({
   cutFreeShippingThreshold: 0,
   cutWidth: 0.61,
   weedComplexity: "simple",
+  laminationId: "",
 });
 const cutPurchaseOrigin = (line: Line) =>
   line.cutCatalog === "Arlon" || line.linearMeters >= 5
@@ -598,6 +610,9 @@ function calc(l: Line) {
       finishes: 0,
       transfer,
       weedLabor: labor,
+      laminationMaterial: 0,
+      laminationLabor: 0,
+      laminationHours: 0,
       labor,
       cost: material + transfer + labor,
     };
@@ -626,7 +641,13 @@ function calc(l: Line) {
     ),
     bill = p.id === "lona" ? net * 1.1 : optimizedBill,
     waste = bill - net,
-    material = bill * p.substrate;
+    material = bill * p.substrate,
+    laminationProduct = l.laminationId
+      ? products.find((product) => product.id === l.laminationId)
+      : undefined,
+    laminationMaterial = laminationProduct ? bill * laminationProduct.substrate : 0,
+    laminationHours = laminationProduct ? Math.max(0.15, bill * 0.06) : 0,
+    laminationLabor = laminationHours * LAMINATION_ASSISTANT_HOURLY_COST;
   const equipment = p.id === "lona" ? "Solvente Flytoo" : l.equipment;
   let print = bill * ink[equipment];
   if (equipment === "UV")
@@ -671,8 +692,11 @@ function calc(l: Line) {
     finishes,
     transfer: 0,
     weedLabor: 0,
+    laminationMaterial,
+    laminationLabor,
+    laminationHours,
     labor,
-    cost: material + print + finishes + labor,
+    cost: material + print + finishes + laminationMaterial + laminationLabor + labor,
   };
 }
 const marginFloors: Record<Exclude<CustomerType, "">, number> = {
@@ -690,6 +714,7 @@ function compatibleKey(l: Line) {
     l.grommetPattern,
     l.trim,
     l.shapeCut,
+    l.laminationId,
     l.cutCatalog,
     l.cutWidth,
     l.weedComplexity,
@@ -775,9 +800,13 @@ function technicalDescription(l: Line) {
       ? ` Para tensar en bastidor: sin bastilla ni ojillos.${panel}`
       : ` Acabado: ${perimeter}${l.grommetPattern !== "OJ-00" ? ` y ${automaticGrommets(l)} ojillos` : ""}.${panel}`;
   } else {
+    const laminate = l.laminationId
+      ? products.find((product) => product.id === l.laminationId)
+      : undefined;
     const extras = [
       l.trim ? "refile perimetral" : "",
       l.shapeCut ? "corte a forma en Plotter de Corte" : "",
+      laminate ? `laminado protector con ${laminate.name}` : "",
     ].filter(Boolean);
     if (extras.length) finish = ` Acabados: ${extras.join(" y ")}.`;
   }
@@ -3024,6 +3053,31 @@ function ConceptEditor({
                 </label>
               </>
             )}
+            {isLaminatableProduct(p.id) && (
+              <label className="lamination-select">
+                Laminado protector
+                <select
+                  value={line.laminationId}
+                  onChange={(e) =>
+                    update({ laminationId: e.target.value as LaminationId })
+                  }
+                >
+                  <option value="">Sin laminado</option>
+                  {laminationProductIds.map((id) => {
+                    const laminate = products.find((product) => product.id === id)!;
+                    return (
+                      <option key={id} value={id}>
+                        {laminate.name}
+                      </option>
+                    );
+                  })}
+                </select>
+                <small>
+                  Usa la misma área cobrable del vinil impreso y calcula
+                  automáticamente el tiempo del auxiliar en laminadora.
+                </small>
+              </label>
+            )}
           </div>
         ) : (
           <div className="cut-production-status">
@@ -3889,15 +3943,19 @@ function CostBreakdown({
       ink: a.ink + x.result.ink,
       finishes: a.finishes + x.result.finishes,
       transfer: a.transfer + x.result.transfer,
+      laminationMaterial: a.laminationMaterial + x.result.laminationMaterial,
+      laminationLabor: a.laminationLabor + x.result.laminationLabor,
       labor: a.labor + x.result.labor,
     }),
-    { material: 0, ink: 0, finishes: 0, transfer: 0, labor: 0 },
+    { material: 0, ink: 0, finishes: 0, transfer: 0, laminationMaterial: 0, laminationLabor: 0, labor: 0 },
   );
   const details = [
     { name: "Sustratos", value: sums.material, group: "Materia prima" },
     { name: "Tinta y operación", value: sums.ink, group: "Costos indirectos" },
     { name: "Acabados", value: sums.finishes, group: "Procesos" },
     { name: "Transfer 122 cm", value: sums.transfer, group: "Materia prima" },
+    { name: "Laminado protector", value: sums.laminationMaterial, group: "Materia prima" },
+    { name: "Auxiliar · laminado", value: sums.laminationLabor, group: "Mano de obra" },
     { name: "Mano de obra / depilado", value: sums.labor, group: "Mano de obra" },
     { name: "Flete de abastecimiento", value: procurementFreight || 0, group: "Costos indirectos" },
     { name: "Diseño gráfico", value: designCost, group: "Mano de obra" },
