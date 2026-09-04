@@ -283,6 +283,7 @@ type Product = {
   mode: Mode;
   substrate: number;
   rollWidth: number;
+  costPending?: boolean;
 };
 type Line = {
   id: number;
@@ -385,6 +386,14 @@ const products: Product[] = [
     rollWidth: 1.5,
   },
   {
+    id: "traslucido",
+    name: "Vinil Blanco Traslúcido",
+    mode: "area",
+    substrate: 0,
+    rollWidth: 1.5,
+    costPending: true,
+  },
+  {
     id: "arlon-dpf510",
     name: "Vinil Mate Arlon DPF510",
     mode: "area",
@@ -406,6 +415,43 @@ const products: Product[] = [
     rollWidth: 0.61,
   },
 ];
+const granFormatProductGroups = [
+  {
+    title: "Básicos",
+    productIds: [
+      "lona",
+      "mate",
+      "brillante",
+      "transparente-mate",
+      "transparente-brillante",
+      "micro",
+    ],
+  },
+  {
+    title: "Premium",
+    productIds: ["arlon-dpf510", "arlon-3510", "electrostatico", "esmerilado"],
+  },
+  {
+    title: "Viniles especiales",
+    productIds: ["backlight", "traslucido", "recorte", "esmerilado-recorte"],
+  },
+] as const;
+const productGuidance: Record<string, string> = {
+  lona: "Lonas publicitarias, bastillas, ojillos y estructuras.",
+  mate: "Impresión económica sin reflejos para interiores y exteriores.",
+  brillante: "Impresión económica con acabado brillante y color intenso.",
+  "transparente-mate": "Laminado protector mate o gráficos para superficies transparentes.",
+  "transparente-brillante": "Laminado protector brillante o gráficos para superficies transparentes.",
+  micro: "Gráficos para cristal con visibilidad desde el interior.",
+  "arlon-dpf510": "Vinil blanco premium para exteriores y aplicaciones de mayor duración.",
+  "arlon-3510": "Laminado transparente premium mate para proteger impresiones Arlon.",
+  electrostatico: "Aplicaciones temporales en cristal sin adhesivo permanente.",
+  esmerilado: "Privacidad y decoración en cristal con acabado tipo arenado.",
+  backlight: "Gráficos retroiluminados para cajas de luz y anuncios luminosos.",
+  traslucido: "Vinil blanco para cajas de luz; pendiente de cargar costo.",
+  recorte: "Letras, logotipos y gráficos a color cortados en plotter.",
+  "esmerilado-recorte": "Vinil esmerilado sin impresión para corte y privacidad en cristal.",
+};
 const ink: Record<Equipment, number> = {
   "HP Latex": 46,
   "Solvente Flytoo": 34,
@@ -2132,30 +2178,45 @@ export default function Home() {
                 {currentStepId === "printing" ? (
                   <>
                     <div className="product-picker">
-                      {products.map((p) => {
-                        const chosen = selectedProducts.some(
-                          (x) => x.id === p.id,
-                        );
-                        return (
-                          <button
-                            key={p.id}
-                            className={chosen ? "picked repeatable" : ""}
-                            onClick={() =>
-                              chosen ? addConcept(p.id) : addProduct(p.id)
+                      {granFormatProductGroups.map((group) => (
+                        <section className="product-picker-group" key={group.title}>
+                          <h3>{group.title}</h3>
+                          {group.productIds.map((productId) => {
+                            const p = products.find((product) => product.id === productId);
+                            if (!p) {
+                              return (
+                                <div className="product-picker-pending" key={productId}>
+                                  <strong>Vinil Esmerilado de Recorte</strong>
+                                  <small>{productGuidance[productId]}</small>
+                                  <em>Próximamente</em>
+                                </div>
+                              );
                             }
-                          >
-                            <span>＋</span>
-                            <strong>{p.name}</strong>
-                            <small>
-                              {chosen
-                                ? "Agregar otro concepto"
-                                : p.mode === "linear"
-                                  ? "Cotización por metro lineal"
-                                  : "Cotización por metro cuadrado"}
-                            </small>
-                          </button>
-                        );
-                      })}
+                            const chosen = selectedProducts.some((x) => x.id === p.id);
+                            return (
+                              <button
+                                key={p.id}
+                                disabled={p.costPending}
+                                className={`${chosen ? "picked repeatable" : ""} ${p.costPending ? "cost-pending-product" : ""}`}
+                                onClick={() => chosen ? addConcept(p.id) : addProduct(p.id)}
+                              >
+                                <span>{p.costPending ? "!" : "＋"}</span>
+                                <strong>{p.name}</strong>
+                                <small>
+                                  {p.costPending
+                                    ? "Costo pendiente de registrar"
+                                    : chosen
+                                      ? "Agregar otro concepto"
+                                      : productGuidance[p.id] ||
+                                        (p.mode === "linear"
+                                          ? "Cotización por metro lineal"
+                                          : "Cotización por metro cuadrado")}
+                                </small>
+                              </button>
+                            );
+                          })}
+                        </section>
+                      ))}
                     </div>
                     {selectedProducts.length === 0 ? (
                       <div className="empty compact-empty">
